@@ -1,0 +1,24 @@
+# ==============================================================================
+# Beatbar Suite - Python Dependencies Specification
+# ==============================================================================
+
+# Core GUI Framework (Required by Beatbar Maker, Viewer, Skins Maker, Launcher)
+PyQt6>=6.5.0
+
+# Computer Vision & Video Frame Decoding (Required by Maker, Viewer)
+opencv-python>=4.8.0
+
+# Numerical, Scientific & Audio DSP Computing (Required by Beatbar Maker)
+numpy>=1.24.0
+scipy>=1.10.0
+librosa>=0.10.0
+
+# Imaging & Textures (Required by Maker, Web QR Code)
+Pillow>=9.5.0
+
+# Web Streaming Server & Mobile Delivery (Required by Web Beatbar Viewer)
+Flask>=2.3.0
+qrcode[pil]>=7.4.0
+
+# Standalone Executable Compilation (Optional, used by Launcher Compiler)
+pyinstaller>=6.0.0

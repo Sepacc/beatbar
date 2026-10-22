@@ -1,0 +1,70 @@
+# Python byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Python virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE and Editor Files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# User config files and local state
+.config
+config.json
+*.log
+crash.log
+main/crash.log
+
+# Cache and temporary directories
+cache/
+
+# Browser extension (separate project)
+extension/
+
+# Test files in root directory
+/test_*.py
+
+# Web runtime media and thumbnails
+web/previews/
+web/thumbnails/
+
+# Media files and archives (GitHub blocks files > 100MB)
+videos/*
+!videos/.gitkeep
+packme/
+
+# Build artifacts & PyInstaller compiled binaries
+build/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+*.spec
+launcher/compiled/
+launcher/build_temp/
+_review_deletion/

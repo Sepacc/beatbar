@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3500 180" width="3500" height="180">
+  <defs>
+    <linearGradient id="cyberPanelGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#2a2a30" />
+      <stop offset="25%" stop-color="#18181c" />
+      <stop offset="85%" stop-color="#0e0e12" />
+      <stop offset="100%" stop-color="#1e1e24" />
+    </linearGradient>
+    <linearGradient id="cyberBorderGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#707078" />
+      <stop offset="15%" stop-color="#9b51e0" />
+      <stop offset="50%" stop-color="#d434ef" />
+      <stop offset="85%" stop-color="#9b51e0" />
+      <stop offset="100%" stop-color="#707078" />
+    </linearGradient>
+  </defs>
+
+  <!-- Main Body Panel with Angled Wings, Top Center Tab, and Bottom Notch -->
+  <path d="
+    M 5 15
+    L 75 9
+    L 1420 9
+    L 1450 3
+    L 2050 3
+    L 2080 9
+    L 3425 9
+    L 3495 15
+    L 3425 132
+    L 2480 132
+    L 2450 168
+    L 1050 168
+    L 1020 132
+    L 75 132
+    Z
+  " fill="url(#cyberPanelGrad)" stroke="url(#cyberBorderGrad)" stroke-width="3" stroke-linejoin="round" />
+
+  <!-- Inner Top Rim Highlight -->
+  <path d="M 80 12 L 1420 12 L 1450 6 L 2050 6 L 2080 12 L 3420 12" 
+        stroke="#ffffff" stroke-width="1.2" opacity="0.4" fill="none" />
+        
+  <!-- Center Notch Lower Rail Trim -->
+  <path d="M 1018 134 L 1048 170 L 2452 170 L 2482 134" 
+        stroke="#e056fd" stroke-width="1.5" opacity="0.6" fill="none" />
+</svg>

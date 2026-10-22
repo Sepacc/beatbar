@@ -1,0 +1,447 @@
+================================================================================
+                         BEATBAR SUITE - COMPLETE USER GUIDE
+================================================================================
+
+Welcome to the Beatbar Suite documentation. This guide details the features,
+usage instructions, keyboard shortcuts, and Python dependencies for every
+application in the ecosystem:
+
+  1. Beatbar Maker      - Audio DSP analysis, rhythm zone sequencing & beat packaging
+  2. Beatbar Viewer     - Cinematic desktop HUD video player with vector beatbars
+  3. Beatbar Skins Maker- Vector skin designer, color swatches & live hit simulator
+  4. Web Beatbar Viewer - Mobile & Android-optimized browser streamer with touch HUD
+  5. Suite Launcher     - Unified studio hub, process manager & PyInstaller compiler
+
+--------------------------------------------------------------------------------
+TABLE OF CONTENTS
+--------------------------------------------------------------------------------
+  1. System Architecture & File Formats
+  2. App 1: Beatbar Maker (Audio DSP & Rhythm Editor)
+  3. App 2: Beatbar Viewer (Video & Beatbar Player)
+  4. App 3: Beatbar Skins Maker (Vector Skin Studio)
+  5. App 4: Web Beatbar Viewer (Mobile & Browser Streamer)
+  6. App 5: Suite Launcher & Studio Hub
+  7. Python Dependencies & Installation Guide
+  8. Standalone Batch Scripts (.bat) Reference
+  9. Third-Party Credits & Licenses
+
+================================================================================
+1. SYSTEM ARCHITECTURE & FILE FORMATS
+================================================================================
+
+The Beatbar Suite connects audio analysis, vector rendering, video playback,
+and cross-platform streaming through three unified formats:
+
+* .BEAT PACKAGES:
+  ZIP-based compressed archives containing:
+    - manifest.json   : Track title, author, version, and difficulty metadata
+    - beatmap.json    : Millisecond-accurate beat timestamps, zones, and settings
+    - video file      : Associated video stream (.mp4, .webm, etc.)
+    - skin assets     : Optional bundled custom SVG skin components
+
+* .JSON BEATMAP FILES:
+  Standalone beatmap files containing:
+    - beats           : Array of floating-point timestamps in seconds
+    - zones           : Rhythm zones (Normal, Climax, Speeding Up, Slowing, Pause, Edging)
+    - settings        : Playback speed, note lead time, screen shake mode, BPM
+    - audio/video ref : File name or path link
+
+* VECTOR SVG SKINS:
+  Modular SVG components stored in assets/skins/:
+    1. panel.svg      : Main trapezoidal cyber panel
+    2. wing_left.svg  : Left wing emblem
+    3. wing_right.svg : Mirrored or distinct right wing emblem
+    4. target.svg     : Center crest / reticle with hit reaction
+    5. beat.svg       : Approaching beat icon (gem, crest, orb, shard)
+
+================================================================================
+2. APP 1: BEATBAR MAKER (main/main.py)
+================================================================================
+
+The Beatbar Maker is a comprehensive rhythm production studio and digital signal
+processing (DSP) workstation for synchronizing video and audio with interactive
+beat tracks.
+
+CORE FEATURES:
+  * Multi-Band Audio DSP Analysis (v2 & v3 algorithms):
+    - Sub-bass & low frequency transient detection (kicks and heavy drops)
+    - Mid-range energy detection (snares, claps, dynamic synth hits)
+    - High-frequency onset detection (hi-hats, percussive clicks)
+  * Dynamic Tempo & BPM Grid:
+    - Automatic BPM estimation with confidence weighting
+    - Quantized snapping grid (1/1, 1/2, 1/4, 1/8 beat divisions)
+  * Visual Rhythm Zones Editor:
+    - Zone types: Normal, Climax, Speeding Up, Slowing, Pause, Edging
+    - Visual timeline coloring and real-time parameter tweaking
+    - Auto-detection of rhythm intensity changes
+  * Difficulty Rating Engine:
+    - Automatically scores beatmaps from Level 1 to 10 (Easy to Master)
+    - Evaluates total beats, peak burst density (5+ notes in <0.35s), and tempo
+  * Synchronized Multi-Track Timeline:
+    - Audio waveform rendering
+    - Video playback canvas with frame-accurate scrubbing
+    - Interactive beat markers: add, drag, nudge, or batch-delete beats
+  * Package Importer & Exporter:
+    - One-click export to standalone .json or packed .beat archives
+    - Auto-generates companion metadata and clean JSON definitions
+
+ROUGH HOW-TO-USE:
+  1. Launch the Maker:
+     Double-click "Guide\run_beatbar_maker.bat" or run:
+       python -m main
+  2. Load Media:
+     Click "Open Video/Audio" or press Ctrl+O. Select any video (.mp4, .mkv) or
+     audio file (.mp3, .wav). The audio waveform and video frame will load.
+  3. Generate Beats Automatically:
+     - Click "Analyze Audio" (or press Ctrl+G).
+     - Select the DSP profile (v2 standard or v3 multi-band).
+     - Adjust sensitivity threshold and frequency range sliders.
+     - Click "Run Analysis". The timeline will populate with beat markers.
+  4. Fine-Tune on the Timeline:
+     - Play / Pause with Spacebar.
+     - Zoom in/out horizontally using the mouse wheel or zoom slider.
+     - Click on the timeline to place new beats at the playhead.
+     - Click and drag existing beat markers to adjust their timing.
+     - Right-click a beat marker to delete it.
+  5. Define Rhythm Zones:
+     - Click "Zones Editor" to open the zone management window.
+     - Add zones for intense sequences (Climax, Edging, Speed Up).
+     - Zones influence dynamic camera punch and visual FX during playback.
+  6. Export & Pack:
+     - Click "Export JSON" to save a lightweight beatmap file.
+     - Click "Pack .beat File" to create a single self-contained package.
+
+KEYBOARD SHORTCUTS:
+  * Spacebar            : Play / Pause
+  * Left / Right Arrow  : Seek backward / forward 1 second
+  * Shift + Left/Right  : Frame step backward / forward
+  * B                   : Place beat at current playhead position
+  * Delete              : Delete selected beat marker
+  * Ctrl + O            : Open media file
+  * Ctrl + S            : Save / Export beatmap JSON
+  * Ctrl + P            : Pack into .beat archive
+  * Mouse Wheel         : Zoom timeline in / out
+
+PYTHON DEPENDENCIES:
+  * PyQt6               : Timeline and multi-dock GUI widgets
+  * opencv-python (cv2) : Frame extraction and video decoding
+  * numpy               : High-speed matrix operations on audio signals
+  * scipy               : Signal processing, peak detection, and digital filters
+  * librosa             : Audio feature extraction, onset envelopes, and tempo tracking
+  * Pillow (PIL)        : Image and icon manipulation
+  * ffmpeg (System CLI) : Audio stream extraction from container formats
+
+================================================================================
+3. APP 2: BEATBAR VIEWER (viewer/main.py)
+================================================================================
+
+The Beatbar Viewer is a frameless, cinematic desktop player that plays video
+tracks synchronized with animated vector beatbars, target shockwaves, and
+reactive camera punch screen shakes.
+
+CORE FEATURES:
+  * Sleek Frameless HUD Window:
+    - Native drag and drop by top titlebar, double-click to maximize/restore
+    - Top center pill with active video title and 1-click "Next Video" (▶|) button
+    - Auto-collapse HUD: controls fade out after 2.5 seconds of inactivity,
+      leaving only the pure video and floating beatbar
+  * Centerpiece Vector Beatbar:
+    - Angled trapezoidal panel with metallic sheen and cyber borders
+    - Approaching beats travel smoothly across the lane toward the central target
+    - Demonic crest target with spring-decay pop scale on beat hits
+    - Triangular indicator arrow (▲) marking precise strike timing
+    - Particle burst and glowing shockwave ring physics
+  * Embedded Secondary Timeline:
+    - Fitted into the bottom notch cutout of the beatbar panel
+    - Fills progressively from 0% to 100% as the track plays
+    - Direct click-and-drag seeking on the beatbar itself
+  * Dynamic Camera Punch Screen Shake:
+    - Spring-decay camera zoom on intense rhythm hits
+    - Automatically triggered in Climax / Edging zones and 5+ note rapid bursts
+    - Configurable intensity (Subtle 1.03x to Strong 1.08x)
+  * Slide-Out Library Drawer & Rating System:
+    - Slide-out drawer with video thumbnails, beat status tags, and search bar
+    - Interactive 5-star user rating overlay directly inside the player
+  * Theme & Color Harmonizer (Settings Dialog):
+    - Preset themes: Violet Amethyst, Cyber Synthwave, Emerald Groove,
+      Solar Flare, Crimson Fury
+    - Custom RGB color pickers for wings, borders, accents, and beat icons
+
+ROUGH HOW-TO-USE:
+  1. Launch the Viewer:
+     Double-click "Guide\run_beatbar_viewer.bat" or run:
+       python -m viewer
+     (Optional: pass a video path: python viewer/main.py "videos/my_track.mp4")
+  2. Automatic Beatmap Discovery:
+     The Viewer looks for a matching .beat or .json file alongside the video.
+     If found, rhythm beats, zones, and speed parameters are loaded automatically.
+  3. Video Library Navigation:
+     - Click the Video Title pill at the top center to view the current track.
+     - Click the "Next Video" (▶|) button to jump to the next video in the folder.
+     - Open the Library Drawer (left side) to browse all videos with thumbnails.
+  4. Controlling Playback:
+     - Click the Timeline Knob (rounded white square with play icon) or press Space.
+     - Drag the knob or click anywhere on the bottom bar to scrub.
+     - Hover over the Volume icon to reveal the vertical sound bar.
+     - Click the Speed button to cycle speeds from 0.3x up to 3.0x.
+  5. Customizing Settings:
+     - Click the Settings gear icon (top-left).
+     - Switch beatbar skins (Cyber Wings, Clean Template, Custom SVG).
+     - Select beat icon styles (Demonic Crest, Neon Gems, Colored Bars, Orbs).
+     - Adjust Note Lead Time (scroll speed: 0.6s to 3.0s).
+     - Pick a theme palette or customize colors.
+
+KEYBOARD SHORTCUTS:
+  * Spacebar            : Play / Pause
+  * Left Arrow          : Seek backward 5 seconds
+  * Right Arrow         : Seek forward 5 seconds
+  * Up Arrow            : Volume up 5%
+  * Down Arrow          : Volume down 5%
+  * M                   : Toggle mute
+  * S                   : Toggle Camera Punch screen shake on/off
+  * L                   : Toggle video looping
+  * F or F11            : Toggle borderless fullscreen
+  * Esc                 : Exit fullscreen or close settings modal
+
+PYTHON DEPENDENCIES:
+  * PyQt6               : Multimedia player, QPainter vector rendering, frameless HUD
+  * opencv-python (cv2) : Video metadata inspection and thumbnail extraction
+  * numpy               : Hit timing interpolation and decay animations
+  * ffmpeg (System CLI) : Video container and thumbnail generation
+
+================================================================================
+4. APP 3: BEATBAR SKINS MAKER (beatpanel/main.py)
+================================================================================
+
+BeatPanel is a dedicated vector skin design studio and SVG previewer built
+specifically for crafting and customizing Beatbar skins.
+
+CORE FEATURES:
+  * 5 Core Beatbar Components:
+    1. Main Panel  (panel.svg)      - Base angled chassis with bevel & cyber borders
+    2. Left Wing   (wing_left.svg)  - Left corner wing sigil emblem
+    3. Right Wing  (wing_right.svg) - Mirrored or distinct right corner emblem
+    4. Target      (target.svg)     - Center demon crest skull / reticle
+    5. Beats       (beat.svg)       - Approaching note icons (crest, diamond, shard)
+  * Live Simulation Engine:
+    - Real-time animated simulation identical to the Viewer's vector renderer
+    - Approaching beats flow towards target with configurable speed
+    - Manual "Trigger Hit" button to preview pop scale, shockwaves, and sparks
+    - Flow direction toggling (Right-to-Left, Left-to-Right, Both Sides)
+    - Backdrop modes (Studio Glow, Transparent Grid, Cyber Stage, Pitch Black)
+  * Visual Customization Tools:
+    - Color Swatch Inspector: auto-detects all hex colors inside the active SVG.
+      Click any swatch to open a live color picker and replace colors instantly!
+    - SVG XML Live Editor: raw code editor with syntax validation, line numbers,
+      and real-time preview updates
+    - Wing Symmetry Mirroring: 1-click button to mirror the Left Wing to the
+      Right Wing (or vice-versa), generating symmetric wing pairs automatically
+    - Global Palette Harmonizer: applies a cohesive color theme across all
+      5 component SVGs simultaneously
+    - 1-Click Export to Viewer: saves directly into viewer/skins/ and updates
+      viewer_config.json automatically
+
+ROUGH HOW-TO-USE:
+  1. Launch the Skin Maker:
+     Double-click "Guide\run_skin_maker.bat" or run:
+       python -m beatpanel
+  2. Select or Create a Skin:
+     - Choose an existing skin from the dropdown or click "New Skin".
+     - Select which of the 5 components you want to inspect (Panel, Wings, Target, Beat).
+  3. Customize Colors:
+     - Look at the "Color Swatches" panel on the right.
+     - Click any detected color swatch to open the color picker.
+     - Choose a new hue; the live preview updates immediately.
+  4. Mirror Wings:
+     - If you design a custom Left Wing, click "Mirror to Right Wing".
+     - The tool automatically generates a mirrored SVG matrix transformation.
+  5. Test Hit Reactions:
+     - Click "Trigger Hit" to test how the target reticle scales and how shockwaves expand.
+     - Switch backdrops to preview how the skin looks over dark videos vs bright scenes.
+  6. Direct XML Editing:
+     - Switch to the "XML Editor" tab to edit raw vector paths, gradients, and defs.
+     - Syntax checks prevent broken SVGs from corrupting your skin.
+  7. Export:
+     - Click "Export to Viewer" to publish the skin straight to the Beatbar Viewer.
+
+PYTHON DEPENDENCIES:
+  * PyQt6               : QSvgRenderer, vector preview canvas, swatch color pickers
+
+================================================================================
+5. APP 4: WEB BEATBAR VIEWER (web/run_web.py)
+================================================================================
+
+The Web Beatbar Viewer is a mobile-first, Android-optimized web streaming server
+and client designed for smartphones, tablets, and desktop browsers.
+
+CORE FEATURES:
+  * Android Mobile-First Design:
+    - Touch-optimized fullscreen playback with landscape orientation lock
+    - Mobile gestures: double-tap left/right to skip 5 seconds with ripple animation
+    - Auto-collapse HUD: UI fades out after 2.5s of no touch interaction
+    - Hardware-accelerated Canvas rendering (scaled by window.devicePixelRatio)
+      for razor-sharp visuals on OLED and high-DPI screens
+    - 1-tap QR Code pairing displayed on server launch and in web header
+  * Faithful Vector HUD Reproduction:
+    - Angled metallic trapezoidal panel with cyber glowing borders
+    - Dynamic approaching beats with configurable lead time (1.5s default)
+    - Central target reticle with spring-decay pop scale on beat hits
+    - Expanding glowing shockwave rings and sparkling burst particles
+    - Secondary progress timeline inside the bottom notch with touch scrubbing
+    - Camera punch screen shake zoom on intense beats
+  * High-Performance Media Streaming:
+    - Full HTTP 206 Partial Content (Byte-Range requests) support for instant,
+      butter-smooth seeking on mobile Chrome, Firefox, and Safari
+    - Multi-format beatmap parser: reads .beat archives, v2 JSON beatmaps,
+      and legacy timestamp files
+  * Interactive Library & Upload Portal:
+    - Auto-scans videos/ directory on startup
+    - Generates and caches video thumbnails using FFmpeg
+    - Filter tabs: All, With Beats, Missing Beats
+    - In-browser Upload/Attach modal to attach custom .beat or .json files from a phone
+
+ROUGH HOW-TO-USE:
+  1. Start the Web Server:
+     Double-click "Guide\run_web_viewer.bat" or run:
+       python web/run_web.py --open
+     The server starts on port 8080 and opens your default browser.
+  2. Accessing from Android Phone:
+     - Ensure your phone is on the same Wi-Fi network as your PC.
+     - Look at the console or click "Connect Phone" in the web header to show the QR code.
+     - Scan the QR code with your phone camera, or type the LAN URL (e.g. http://192.168.1.50:8080).
+  3. Mobile Playback:
+     - Tap any video in the library to open the web player.
+     - Rotate to landscape mode for automatic full-screen theater viewing.
+     - Single tap anywhere to toggle the HUD controls.
+     - Double-tap the left screen edge to rewind 5s; double-tap right to fast forward 5s.
+     - Touch and slide along the bottom notch timeline to scrub through the track.
+
+CLI OPTIONS:
+  --port PORT           Port to listen on (default: 8080)
+  --host HOST           Host interface (default: 0.0.0.0 for LAN access)
+  --folder PATH         Directory to scan for videos (default: ./videos)
+  --open                Automatically open default web browser on startup
+  --debug               Enable Flask debugging mode
+
+PYTHON DEPENDENCIES:
+  * Flask               : Lightweight HTTP streaming server and REST API
+  * qrcode[pil]         : LAN pairing QR code generation
+  * Pillow (PIL)        : Image rendering and QR code generation
+  * ffmpeg (System CLI) : Video thumbnail caching
+
+================================================================================
+6. APP 5: SUITE LAUNCHER & STUDIO HUB (launcher/launcher.py)
+================================================================================
+
+The Suite Launcher is the central desktop dashboard and studio hub for the
+entire Beatbar ecosystem.
+
+CORE FEATURES:
+  * Unified Studio Dashboard:
+    - 1-click launch buttons for Beatbar Maker, Viewer, Skins Maker, and Web Streamer
+    - Displays version numbers, descriptions, and operational status for each app
+  * Process Management:
+    - Tracks running sub-processes in real time
+    - Displays active running status and prevents accidental duplicate launches
+  * Version Tracking & PyInstaller Compiler:
+    - Compares source code versions (.version) against compiled Windows PE executables
+    - Built-in Compiler Dialog powered by PyInstaller: compiles standalone .exe binaries
+      with embedded version information into launcher/compiled/
+  * Beat Dropzone:
+    - Drag-and-drop zone to drop .beat packages or video files
+    - Automatically unpacks, inspects, and launches the appropriate player
+  * Skin Gallery:
+    - Visual skin catalog to preview and manage installed vector skins
+
+ROUGH HOW-TO-USE:
+  1. Double-click "run_launcher.bat" in the project root or "Guide\run_launcher.bat".
+  2. Click "Launch" on any program card to open that tool.
+  3. Click "Compile" to build an updated standalone .exe with PyInstaller.
+  4. Drag and drop any .beat or video file directly into the launcher window.
+
+PYTHON DEPENDENCIES:
+  * PyQt6               : Hub UI, cards, dropzone, and compiler dialog
+  * pyinstaller         : (Optional) Standalone Windows executable compiler
+
+================================================================================
+7. PYTHON DEPENDENCIES & INSTALLATION GUIDE
+================================================================================
+
+DEPENDENCY MATRIX:
+--------------------------------------------------------------------------------
+Package        Version   Maker   Viewer   Skins   Web   Launcher   Purpose
+--------------------------------------------------------------------------------
+PyQt6          >=6.5.0     YES     YES     YES     --      YES     GUI & Vector Engine
+opencv-python  >=4.8.0     YES     YES     --      --      --      Video Decoding / FPS
+numpy          >=1.24.0    YES     YES     --      --      --      DSP & Math Vectors
+scipy          >=1.10.0    YES     --      --      --      --      Audio Peak Finding / DSP
+librosa        >=0.10.0    YES     --      --      --      --      Transient & Tempo Audio
+Pillow (PIL)   >=9.5.0     YES     --      --      YES     --      Image / QR Rendering
+Flask          >=2.3.0     --      --      --      YES     --      Web Streaming Server
+qrcode[pil]    >=7.4.0     --      --      --      YES     --      LAN Phone Pairing QR
+pyinstaller    >=6.0.0     --      --      --      --      OPT     Building .exe Binaries
+--------------------------------------------------------------------------------
+ffmpeg         System CLI  YES     YES     --      YES     --      Audio/Video Transcoding
+--------------------------------------------------------------------------------
+
+AUTOMATED INSTALLATION:
+  Simply double-click the included batch script:
+    "Guide\install_dependencies.bat"
+  This script will automatically:
+    1. Detect your Python interpreter
+    2. Upgrade pip
+    3. Install all requirements from requirements.txt
+    4. Run an import verification test for all packages
+    5. Check if FFmpeg is installed in PATH
+
+MANUAL INSTALLATION:
+  Open a terminal in the project root and run:
+    pip install -r requirements.txt
+
+INSTALLING FFMPEG (IF MISSING):
+  FFmpeg is required for audio extraction and thumbnail generation:
+    - Windows (Winget): winget install Gyan.FFmpeg
+    - Windows (Scoop) : scoop install ffmpeg
+    - Direct Download : https://ffmpeg.org/download.html (add bin/ to PATH)
+
+================================================================================
+8. STANDALONE BATCH SCRIPTS (.BAT) REFERENCE
+================================================================================
+
+All scripts are located in the "Guide" directory. They automatically locate the
+project root, verify Python, and launch with full argument forwarding:
+
+  * install_dependencies.bat : Automated package installer & verification tool
+  * run_beatbar_maker.bat    : Launches Beatbar Maker (Audio DSP & Rhythm Editor)
+  * run_beatbar_viewer.bat   : Launches Beatbar Viewer (Video & Beatbar Player)
+  * run_skin_maker.bat       : Launches Beatbar Skins Maker (Vector Skin Studio)
+  * run_web_viewer.bat       : Launches Web Beatbar Viewer (starts server & opens browser)
+  * run_launcher.bat         : Launches Suite Launcher & Studio Hub
+
+TIPS:
+  - You can run these batch files directly from the "Guide\" folder.
+  - You can also copy any of these .bat files to the project root; they will
+    automatically detect the root directory and work identically.
+  - You can pass video files as arguments to run_beatbar_viewer.bat:
+      run_beatbar_viewer.bat "videos\my_song.mp4"
+
+================================================================================
+9. THIRD-PARTY CREDITS & LICENSES
+================================================================================
+
+The Beatbar Suite gratefully incorporates the following open-source assets:
+
+1. Feather Icons:
+   - Creator: Cole Bemis and Feather Contributors
+   - Website: https://feathericons.com
+   - Repository: https://github.com/feathericons/feather
+   - License: MIT License
+   - Usage: UI icons located in assets/feather/*.svg
+
+2. Anybody Font:
+   - Creator: Etcetera Type Co. (Tyler Finck)
+   - Source: https://fontsource.org/fonts/anybody
+   - Repository: https://github.com/Etcetera-Type-Co/Anybody
+   - License: SIL Open Font License, Version 1.1 (OFL-1.1)
+   - Usage: Application icon design and typography branding
+================================================================================

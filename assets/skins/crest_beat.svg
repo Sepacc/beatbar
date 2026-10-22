@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 50" width="60" height="50">
+  <defs>
+    <linearGradient id="beatGlow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="30%" stop-color="#e056fd" />
+      <stop offset="100%" stop-color="#680a9e" />
+    </linearGradient>
+  </defs>
+
+  <!-- Winged Beat Emblem -->
+  <!-- Left Wing Flare -->
+  <path d="M 30 25 C 22 15, 12 10, 4 12 C 8 20, 10 26, 6 34 C 14 30, 22 34, 25 38 C 28 32, 29 28, 30 25 Z" 
+        fill="url(#beatGlow)" stroke="#f368e0" stroke-width="1.2" />
+  <!-- Right Wing Flare -->
+  <path d="M 30 25 C 38 15, 48 10, 56 12 C 52 20, 50 26, 54 34 C 46 30, 38 34, 35 38 C 32 32, 31 28, 30 25 Z" 
+        fill="url(#beatGlow)" stroke="#f368e0" stroke-width="1.2" />
+
+  <!-- Center Diamond Skull -->
+  <polygon points="30,8 40,24 30,44 20,24" fill="#200d38" stroke="#ffffff" stroke-width="1.5" />
+  <polygon points="30,12 37,24 30,40 23,24" fill="url(#beatGlow)" opacity="0.9" />
+
+  <!-- Glowing Eyes -->
+  <circle cx="27" cy="22" r="1.8" fill="#ffffff" />
+  <circle cx="33" cy="22" r="1.8" fill="#ffffff" />
+  <circle cx="27" cy="22" r="0.8" fill="#e056fd" />
+  <circle cx="33" cy="22" r="0.8" fill="#e056fd" />
+  
+  <!-- Horn Accents -->
+  <path d="M 24 16 L 19 6 L 26 12" stroke="#ffffff" stroke-width="1" fill="#e056fd" />
+  <path d="M 36 16 L 41 6 L 34 12" stroke="#ffffff" stroke-width="1" fill="#e056fd" />
+</svg>

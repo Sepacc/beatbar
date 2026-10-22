@@ -1,0 +1,16 @@
+<ns0:svg xmlns:ns0="http://www.w3.org/2000/svg" viewBox="0 0 60 70" width="60" height="70">
+  <ns0:defs>
+    <ns0:linearGradient id="metalWing" x1="0%" y1="0%" x2="100%" y2="100%">
+      <ns0:stop offset="0%" stop-color="#ffffff" />
+      <ns0:stop offset="40%" stop-color="#b0b0b8" />
+      <ns0:stop offset="70%" stop-color="#606068" />
+      <ns0:stop offset="100%" stop-color="#282830" />
+    </ns0:linearGradient>
+  </ns0:defs>
+  <ns0:g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <ns0:path d="M 8 10 L 26 62 L 40 22 L 54 62" stroke="url(#metalWing)" stroke-width="3.5" />
+    <ns0:path d="M 16 18 L 28 54 L 38 28 L 48 54" stroke="#e056fd" stroke-width="1.8" opacity="0.85" />
+    <ns0:line x1="4" y1="28" x2="18" y2="40" stroke="#ffffff" stroke-width="1.5" opacity="0.7" />
+    <ns0:line x1="2" y1="44" x2="14" y2="52" stroke="#ffffff" stroke-width="1.2" opacity="0.5" />
+  </ns0:g>
+</ns0:svg>

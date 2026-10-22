@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0c0c0e">
+  <title>BeatBar Web Viewer</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="icon" type="image/svg+xml" href="/static/icons/beatbar-web.svg">
+</head>
+<body>
+  <div id="app">
+    <!-- ====================================================================
+         VIEW 1: LIBRARY VIEW
+         ==================================================================== -->
+    <div id="view-library" class="view active">
+      <div class="library-container">
+        <!-- Header -->
+        <header class="library-header">
+          <div class="brand-section">
+            <div class="brand-logo-icon">
+              <img src="/static/icons/beatbar-web.svg" alt="BeatBar Web Viewer" width="28" height="28">
+            </div>
+            <div class="brand-titles">
+              <h1>BEATBAR WEB VIEWER</h1>
+              <div class="brand-sub">
+                <span>Folder:</span>
+                <span id="folder-path-badge" class="folder-badge">videos</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="header-actions">
+            <button id="btn-mobile-url" class="btn-pill" title="Click to open QR Code for your Android phone">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+              <span>Connect Phone</span>
+            </button>
+            <button id="btn-qrcode" class="btn-pill" title="Show QR Code">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+              <span>QR Code</span>
+            </button>
+            <button id="btn-lib-skin" class="btn-pill" title="Customize Beatbar Skins">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path></svg>
+              <span>Skins</span>
+            </button>
+            <button id="btn-lib-settings" class="btn-pill" title="Player &amp; Cache Settings">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+              <span>Settings</span>
+            </button>
+            <button id="btn-rescan" class="btn-pill primary" title="Scan directory for new videos and beatmaps">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+              <span>Rescan</span>
+            </button>
+          </div>
+        </header>
+
+        <!-- Search & Filter Toolbar -->
+        <div class="toolbar-section">
+          <div class="search-box">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" id="search-input" class="search-input" placeholder="Search videos by title or name...">
+          </div>
+
+          <div class="filter-tabs">
+            <button class="filter-tab active" data-filter="all">All Videos</button>
+            <button class="filter-tab" data-filter="beats">With Beats</button>
+            <button class="filter-tab" data-filter="missing">Missing Beats</button>
+          </div>
+        </div>
+
+        <!-- Extended Filter & Sorting Controls -->
+        <div class="filter-controls-row">
+          <!-- Difficulty Filter -->
+          <div class="filter-control-item">
+            <label for="select-diff-filter">Difficulty:</label>
+            <select id="select-diff-filter" class="filter-select">
+              <option value="all">All Difficulties</option>
+              <option value="Easy">Easy</option>
+              <option value="Normal">Normal</option>
+              <option value="Hard">Hard</option>
+              <option value="Expert">Expert</option>
+            </select>
+          </div>
+
+          <!-- Duration Filter -->
+          <div class="filter-control-item">
+            <label for="select-dur-filter">Duration:</label>
+            <select id="select-dur-filter" class="filter-select">
+              <option value="all">All Lengths</option>
+              <option value="short">Short (&lt; 2m)</option>
+              <option value="medium">Medium (2–4m)</option>
+              <option value="long">Long (&gt; 4m)</option>
+            </select>
+          </div>
+
+          <!-- Sort Order -->
+          <div class="filter-control-item">
+            <label for="select-sort-order">Sort By:</label>
+            <select id="select-sort-order" class="filter-select">
+              <option value="date_desc">Date (Newest)</option>
+              <option value="date_asc">Date (Oldest)</option>
+              <option value="title_asc">Title (A–Z)</option>
+              <option value="duration_desc">Duration (Longest)</option>
+              <option value="duration_asc">Duration (Shortest)</option>
+              <option value="beats_desc">Beat Count (High to Low)</option>
+            </select>
+          </div>
+
+          <!-- Mobile Thumbnail Mode Toggle (Pictures w/ hold preview vs All Looping Videos) -->
+          <div class="filter-control-item thumb-mode-toggle-wrap">
+            <button id="btn-thumb-mode" class="btn-pill btn-thumb-toggle" title="Toggle between Pictures (tap-and-hold loop) and All Looping Videos">
+              <svg id="icon-thumb-mode-img" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+              <span id="label-thumb-mode">Thumbs: Pictures</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Video Cards Grid -->
+        <div id="video-grid" class="video-grid"></div>
+
+        <!-- Empty State -->
+        <div id="empty-library" class="empty-library" style="display: none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
+          <h3>No matching videos found</h3>
+          <p>Check the videos directory or adjust your search query.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====================================================================
+         VIEW 2: PLAYER VIEW
+         ==================================================================== -->
+    <div id="view-player" class="view">
+      <!-- Video Container with Screen Shake Punch Zoom -->
+      <div class="video-stage">
+        <div id="video-transform-container" class="video-transform-container">
+          <video id="media-video" playsinline webkit-playsinline preload="auto"></video>
+        </div>
+      </div>
+
+      <!-- Hit Reaction Flash / Vignette Overlay -->
+      <div id="player-flash-overlay" class="player-flash-overlay"></div>
+
+      <!-- Touch Gesture Layer (Double tap to skip, tap to toggle UI) -->
+      <div class="touch-gesture-layer">
+        <div class="touch-left">
+          <div class="seek-ripple">
+            <span>« 5s</span>
+          </div>
+        </div>
+        <div class="touch-right">
+          <div class="seek-ripple">
+            <span>5s »</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Floating Centerpiece Beatbar Canvas Widget -->
+      <div class="beatbar-container">
+        <canvas id="beatbar-canvas"></canvas>
+        <div id="beatbar-notch" class="beatbar-notch-hitbox" title="Drag to seek within timeline"></div>
+      </div>
+
+      <!-- Autoplay Prompt Overlay (for mobile browser policy) -->
+      <div id="autoplay-overlay" class="autoplay-overlay">
+        <button id="btn-big-play" class="btn-big-play" title="Tap to start video with sound">
+          <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+        </button>
+        <span class="autoplay-prompt-text">Tap to Play with Sound</span>
+      </div>
+
+      <!-- Player Controls UI (Collapses after 2.5s inactivity) -->
+      <div class="player-ui">
+        <!-- Top Bar -->
+        <div class="player-top-bar">
+          <button id="btn-back-library" class="btn-back-library" title="Return to Video Library">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            <span>Library</span>
+          </button>
+
+          <div class="title-capsule">
+            <svg class="title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line><line x1="2" y1="7" x2="7" y2="7"></line><line x1="2" y1="17" x2="7" y2="17"></line><line x1="17" y1="17" x2="22" y2="17"></line><line x1="17" y1="7" x2="22" y2="7"></line></svg>
+            <div class="title-text-group">
+              <span id="player-video-title" class="title-text">Loading video...</span>
+              <span id="player-level-name" class="level-subtext"></span>
+            </div>
+            <button id="btn-next-video" class="btn-next-video" title="Play Next Video (N)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></svg>
+            </button>
+          </div>
+
+          <div class="top-bar-right">
+            <button id="btn-skin-selector" class="btn-top-action btn-skin-action" title="Customize Beatbar Skin">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path></svg>
+              <span id="active-skin-badge" class="skin-badge">Skins</span>
+            </button>
+            <button id="btn-player-settings" class="btn-top-action" title="Player & Visual Settings">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            </button>
+            <button id="btn-fullscreen" class="btn-top-action" title="Toggle Fullscreen (F)">
+              <svg id="icon-fullscreen" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Skip Credits Overlay Button -->
+        <button id="btn-skip-credits" class="btn-skip-credits" title="Skip Credits">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="5 4 15 12 5 20 5 4"></polygon>
+            <line x1="19" y1="5" x2="19" y2="19"></line>
+          </svg>
+        </button>
+
+        <!-- Bottom Bar -->
+        <div class="player-bottom-bar">
+          <div class="bottom-controls-left">
+            <!-- Sound / Volume Button -->
+            <button id="btn-sound" class="control-btn" title="Adjust Volume (Scroll or Click)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+            </button>
+
+            <!-- Vertical Sound Changing Bar Popup -->
+            <div id="sound-popup" class="sound-popup">
+              <span id="sound-pct" class="sound-pct">85%</span>
+              <div id="sound-slider-track" class="sound-slider-track">
+                <div id="sound-slider-fill" class="sound-slider-fill"></div>
+                <div id="sound-slider-thumb" class="sound-slider-thumb"></div>
+              </div>
+            </div>
+
+            <!-- Play / Pause -->
+            <button id="btn-play-pause" class="control-btn" title="Toggle Play / Pause (Space)">
+              <svg id="icon-play-pause" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            </button>
+
+            <!-- Speed Button (0.3x to 3.0x) -->
+            <button id="btn-speed" class="control-btn" title="Toggle Playback Speed">1.0x</button>
+
+            <!-- Screen Shake Toggle -->
+            <button id="btn-shake" class="control-btn active" title="Toggle Camera Punch Screen Shake (S)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+            </button>
+
+            <!-- Loop Toggle -->
+            <button id="btn-loop" class="control-btn" title="Toggle Video Loop">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
+            </button>
+
+            <!-- Track Selector Pills (All / T1 / T2 / T3) -->
+            <div id="track-selector-group" class="track-selector-group" title="Select Beat Track (Press T to cycle)">
+              <button class="track-btn active" data-track="all" title="All Tracks">All<span id="track-count-all" class="track-count"></span></button>
+              <button class="track-btn" data-track="1" title="Track 1 (Primary Beats)">T1<span id="track-count-1" class="track-count"></span></button>
+              <button class="track-btn" data-track="2" title="Track 2 (Bass / Low-Mid)">T2<span id="track-count-2" class="track-count"></span></button>
+              <button class="track-btn" data-track="3" title="Track 3 (Accents / High-Mid)">T3<span id="track-count-3" class="track-count"></span></button>
+            </div>
+          </div>
+
+          <!-- Timeline Scrubber with Rhythm Zones & Iconic White Knob -->
+          <div class="timeline-section">
+            <div id="scrubber-container" class="scrubber-container">
+              <div id="scrubber-track" class="scrubber-track">
+                <!-- Rhythm zones injected dynamically -->
+                <div id="scrubber-fill" class="scrubber-fill"></div>
+              </div>
+              <div id="scrubber-knob" class="scrubber-knob" title="Drag to Seek or Click to Play/Pause">
+                <svg id="scrubber-knob-icon" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+              </div>
+              <div id="scrubber-tooltip" class="scrubber-tooltip"></div>
+            </div>
+
+            <!-- Time Display -->
+            <span id="player-time-display" class="time-display">00:00 / 00:00</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====================================================================
+         MODALS
+         ==================================================================== -->
+
+    <!-- QR Code Mobile Modal -->
+    <div id="modal-qrcode" class="modal-backdrop">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h3>Connect Android Phone</h3>
+          <button class="modal-close-btn">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="qr-image-wrapper">
+            <img id="qr-image" src="/api/qrcode" alt="QR Code for Mobile">
+          </div>
+          <p style="font-size: 13px; color: #a0a0b2;">Scan with your Android camera or browser QR scanner to open the viewer!</p>
+          <div class="qr-url-box">
+            <span id="qr-url-text">http://localhost:8080</span>
+            <button id="btn-copy-url" class="btn-pill" style="padding: 4px 12px; font-size: 12px;">Copy</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Upload / Attach Beat Modal -->
+    <div id="modal-upload" class="modal-backdrop">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h3>Attach Beatmap</h3>
+          <button class="modal-close-btn">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+        <div class="modal-body" style="text-align: left; align-items: stretch;">
+          <p style="font-size: 13px; color: #a0a0b2;">Attach or replace beatmap for: <strong id="upload-video-title" style="color: #fff;">Video</strong></p>
+          <input type="file" id="upload-file-input" accept=".beat,.json" style="display: none;">
+          <div id="upload-dropzone" class="upload-dropzone">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+            <span style="font-size: 14px; font-weight: 700; color: #fff;">Drag & drop .beat or .json here</span>
+            <span style="font-size: 12px; color: #6b6b7d;">or click to browse your files</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Skin Customization Modal -->
+    <div id="modal-skin-picker" class="modal-backdrop">
+      <div class="modal-dialog modal-dialog-lg">
+        <div class="modal-header">
+          <div class="modal-title-wrap">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path></svg>
+            <h3>Customize Beatbar Skin</h3>
+          </div>
+          <button class="modal-close-btn" title="Close">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+        <div class="modal-body skin-modal-body">
+          <p class="skin-modal-hint">Select a skin bundle from <code>web/skins/*.beat</code>. Custom SVG panels, wings, targets, and palette glow apply live instantly.</p>
+          <div id="skins-grid" class="skins-grid">
+            <!-- Dynamic skin cards rendered here -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal 4: Web Player & Visual Settings -->
+    <div id="modal-settings" class="modal-backdrop">
+      <div class="modal-dialog modal-dialog-lg">
+        <div class="modal-header">
+          <div class="modal-title-wrap">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            <h3>Player &amp; Visual Settings</h3>
+          </div>
+          <button class="modal-close-btn" title="Close">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+        <div class="modal-body settings-modal-body">
+          <!-- Section 1: Visuals & Approach -->
+          <div class="settings-section">
+            <h4 class="settings-sec-title">Approach &amp; Beat Visuals</h4>
+            <div class="setting-row">
+              <div class="setting-label-col">
+                <label for="set-lead-time">Lead Time (Approach Speed):</label>
+                <span class="setting-desc">How early incoming beats appear on the timeline.</span>
+              </div>
+              <div class="setting-ctrl-col">
+                <input type="range" id="set-lead-time" min="0.8" max="2.5" step="0.1" value="1.5" class="setting-slider">
+                <span id="set-lead-time-val" class="setting-slider-val">1.5s</span>
+              </div>
+            </div>
+            <div class="setting-row">
+              <div class="setting-label-col">
+                <label for="set-beat-scale">Beat Size / Scale:</label>
+                <span class="setting-desc">Scale incoming beat icons larger or smaller.</span>
+              </div>
+              <div class="setting-ctrl-col">
+                <input type="range" id="set-beat-scale" min="60" max="150" step="5" value="100" class="setting-slider">
+                <span id="set-beat-scale-val" class="setting-slider-val">100%</span>
+              </div>
+            </div>
+            <div class="setting-row">
+              <div class="setting-label-col">
+                <label for="set-beats-skin">Beats Icon Skin:</label>
+                <span class="setting-desc">Icon style used for incoming rhythm notes.</span>
+              </div>
+              <div class="setting-ctrl-col">
+                <select id="set-beats-skin" class="filter-select">
+                  <option value="custom">Active Pack Skin (Default)</option>
+                  <option value="crest">Demonic Crests</option>
+                  <option value="diamond">Neon Diamonds / Gems</option>
+                  <option value="lane_bar">Colored Rhythm Bars</option>
+                  <option value="orb">Radiant Energy Orbs</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 2: Hit Effects & Camera Shake -->
+          <div class="settings-section">
+            <h4 class="settings-sec-title">Hit Effects &amp; Camera Shake</h4>
+            <div class="setting-row">
+              <div class="setting-label-col">
+                <label for="set-hit-effect">Hit Flash Effect:</label>
+                <span class="setting-desc">Visual flash reaction when beats connect with the target.</span>
+              </div>
+              <div class="setting-ctrl-col">
+                <select id="set-hit-effect" class="filter-select">
+                  <option value="border_flash">Border Glow (Edges Vignette Only)</option>
+                  <option value="picture_flash">Full Screen Flash (Entire Frame Strobe)</option>
+                  <option value="both">Both (Border Glow + Camera Zoom)</option>
+                  <option value="none">Disabled / Off</option>
+                </select>
+              </div>
+            </div>
+            <div class="setting-row">
+              <div class="setting-label-col">
+                <label for="set-flash-color">Flash Illumination Color:</label>
+                <span class="setting-desc">Color used for the vignette and strobe illumination.</span>
+              </div>
+              <div class="setting-ctrl-col color-ctrl-wrap">
+                <input type="color" id="set-flash-color" value="#e056fd" class="setting-color-picker">
+                <span id="set-flash-color-val" class="setting-color-hex">#e056fd</span>
+              </div>
+            </div>
+            <div class="setting-row">
+              <div class="setting-label-col">
+                <label for="set-shake-mode">Camera Punch Screen Shake:</label>
+                <span class="setting-desc">Screen impact shake when notes hit the center target.</span>
+              </div>
+              <div class="setting-ctrl-col">
+                <select id="set-shake-mode" class="filter-select">
+                  <option value="intense_and_bursts">Drops, Climaxes &amp; Bursts Only</option>
+                  <option value="all">Every Single Beat Hit</option>
+                  <option value="off">Disabled / Off</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 3: Timeline & Calibration -->
+          <div class="settings-section">
+            <h4 class="settings-sec-title">Timeline &amp; Audio Sync</h4>
+            <div class="setting-row">
+              <div class="setting-label-col">
+                <label for="set-timeline-zones">Show Rhythm Zones on Timeline:</label>
+                <span class="setting-desc">Draw colored rhythm sections along the timeline scrubber track.</span>
+              </div>
+              <div class="setting-ctrl-col">
+                <input type="checkbox" id="set-timeline-zones" checked class="setting-checkbox">
+              </div>
+            </div>
+            <div class="setting-row">
+              <div class="setting-label-col">
+                <label for="set-audio-offset">Audio Sync Offset (Latency Calibration):</label>
+                <span class="setting-desc">Adjust if Bluetooth audio or display lag desyncs beats from audio.</span>
+              </div>
+              <div class="setting-ctrl-col">
+                <input type="range" id="set-audio-offset" min="-200" max="200" step="5" value="0" class="setting-slider">
+                <span id="set-audio-offset-val" class="setting-slider-val">0 ms</span>
+              </div>
+            </div>
+            <div class="setting-row">
+              <div class="setting-label-col">
+                <label for="set-auto-hide">Auto-Hide Controls Delay:</label>
+                <span class="setting-desc">Duration of inactivity before player top and bottom bars dissolve.</span>
+              </div>
+              <div class="setting-ctrl-col">
+                <select id="set-auto-hide" class="filter-select">
+                  <option value="1.5">1.5 Seconds (Fast)</option>
+                  <option value="2.5" selected>2.5 Seconds (Default)</option>
+                  <option value="4.0">4.0 Seconds (Relaxed)</option>
+                  <option value="0">Never Hide</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 4: User Profile -->
+          <div class="settings-section">
+            <h4 class="settings-sec-title">User Profile &amp; Author</h4>
+            <div class="setting-row">
+              <div class="setting-label-col">
+                <label for="set-default-author">Default Author / Username:</label>
+                <span class="setting-desc">Your display name for custom skins and beat creations.</span>
+              </div>
+              <div class="setting-ctrl-col">
+                <input type="text" id="set-default-author" placeholder="User" value="User" class="setting-text-input">
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 5: Storage & Preview Cache -->
+          <div class="settings-section">
+            <h4 class="settings-sec-title">Storage &amp; Preview Cache</h4>
+            <div class="setting-desc" style="margin-bottom: 6px;">
+              Cached 5-second video preview clips, video thumbnails, and extracted .beat bundles.
+            </div>
+            
+            <div class="cache-stats-container">
+              <div class="cache-stat-item">
+                <span class="cache-stat-label">Preview Clips:</span>
+                <span id="stat-previews-info" class="cache-stat-val">Loading...</span>
+              </div>
+              <div class="cache-stat-item">
+                <span class="cache-stat-label">Thumbnails:</span>
+                <span id="stat-thumbnails-info" class="cache-stat-val">Loading...</span>
+              </div>
+              <div class="cache-stat-item">
+                <span class="cache-stat-label">Extracted Bundles:</span>
+                <span id="stat-extracted-info" class="cache-stat-val">Loading...</span>
+              </div>
+              <div class="cache-stat-item highlight">
+                <span class="cache-stat-label">Unused / Stale Cache:</span>
+                <span id="stat-unused-info" class="cache-stat-val">0 files (0 KB)</span>
+              </div>
+            </div>
+
+            <div class="cache-actions-row">
+              <button id="btn-clean-unused-cache" class="btn-pill" title="Delete previews, thumbnails, and extracted videos for deleted or missing files">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                <span>Clean Unused Cache</span>
+              </button>
+              <button id="btn-clear-previews" class="btn-pill danger-pill" title="Delete all generated 5s preview clips to free space or re-generate them">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                <span>Clear All Previews</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer settings-modal-footer">
+          <button id="btn-reset-settings" class="btn-pill" title="Reset all settings to default values">Reset Defaults</button>
+          <button id="btn-save-settings" class="btn-pill primary">Save &amp; Close</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+  </div>
+
+  <!-- JavaScript Controllers -->
+  <script src="/static/js/beatbar.js"></script>
+  <script src="/static/js/player.js"></script>
+  <script src="/static/js/library.js"></script>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>

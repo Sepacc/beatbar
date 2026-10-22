@@ -1,0 +1,1 @@
+"""Beatbar Web Viewer package."""
