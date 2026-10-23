@@ -44,7 +44,6 @@ for p in [ROOT_DIR, MAIN_DIR]:
         sys.path.insert(0, p)
 
 from icon_utils import get_feather_icon
-from ratings_manager import get_rating, set_rating, get_all_ratings
 from web.video_scanner import VideoScanner
 try:
     from .skin_manager import SkinManager

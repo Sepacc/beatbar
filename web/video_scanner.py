@@ -15,7 +15,6 @@ import subprocess
 from typing import List, Dict, Any, Optional
 
 from web.beat_parser import find_matching_beat_file, parse_beat_file, VIDEO_EXTS
-from ratings_manager import get_rating
 
 
 import zipfile

@@ -92,7 +92,6 @@ def package_release(auto_compile_missing: bool = False):
         "README.md",
         "LICENSE",
         "requirements.txt",
-        "ratings_manager.py",
         "icon_utils.py",
         "run_launcher.bat",
         "run_launcher.vbs",

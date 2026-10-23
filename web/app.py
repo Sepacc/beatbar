@@ -30,7 +30,6 @@ except ImportError:
 
 from web.beat_parser import parse_beat_file, find_matching_beat_file
 from web.video_scanner import VideoScanner, THUMBNAIL_DIR
-from ratings_manager import set_rating, get_rating
 from web.skin_manager import (
     list_skins,
     get_skin,
@@ -400,23 +399,6 @@ def api_upload_beat(filename):
             except OSError:
                 pass
         return jsonify({"success": False, "error": f"Uploaded file is corrupt or invalid: {str(e)}"}), 400
-
-
-@app.route("/api/rate_video/<filename>", methods=["POST"])
-def api_rate_video(filename):
-    """Saves user 1-5 star rating for a video or .beat file."""
-    data = request.get_json(silent=True) or {}
-    rating = int(data.get("rating", 0))
-    full_path = os.path.join(video_folder, filename)
-    target = full_path if os.path.isfile(full_path) else filename
-    saved_rating = set_rating(target, rating)
-    # Refresh cache entry
-    scanner.scan(force_refresh=True)
-    return jsonify({
-        "success": True,
-        "filename": filename,
-        "rating": saved_rating
-    })
 
 
 @app.route("/api/qrcode")
