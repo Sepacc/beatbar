@@ -253,13 +253,9 @@ def build_pyinstaller_command(prog: ProgramConfig) -> Tuple[List[str], Optional[
             "--exclude-module=PyQt6.QtMultimediaWidgets",
         ])
     elif prog.id == "launcher":
-        launcher_dir = os.path.join(ROOT_DIR, "launcher")
+        launcher_ver = os.path.join(ROOT_DIR, "launcher", ".version")
         cmd.extend([
             f"--paths={ROOT_DIR}",
-            f"--paths={launcher_dir}",
-            f"--paths={main_dir}",
-            f"--add-data={launcher_dir};launcher",
-            f"--add-data={main_dir};main",
             "--hidden-import=launcher",
             "--hidden-import=launcher.launcher",
             "--hidden-import=launcher.version_manager",
@@ -274,15 +270,22 @@ def build_pyinstaller_command(prog: ProgramConfig) -> Tuple[List[str], Optional[
             "--hidden-import=PyQt6.QtGui",
             "--hidden-import=PyQt6.QtWidgets",
             "--hidden-import=PyQt6.QtSvg",
+            "--exclude-module=numpy",
             "--exclude-module=scipy",
             "--exclude-module=librosa",
             "--exclude-module=numba",
             "--exclude-module=llvmlite",
             "--exclude-module=cv2",
             "--exclude-module=torch",
+            "--exclude-module=PIL",
+            "--exclude-module=Pillow",
+            "--exclude-module=matplotlib",
+            "--exclude-module=pandas",
             "--exclude-module=PyQt6.QtMultimedia",
             "--exclude-module=PyQt6.QtMultimediaWidgets",
         ])
+        if os.path.exists(launcher_ver):
+            cmd.append(f"--add-data={launcher_ver};launcher")
 
     cmd.append(prog.entry_script)
     return cmd, version_str
