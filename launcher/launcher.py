@@ -747,8 +747,8 @@ class BeatbarLauncherWindow(QMainWindow):
         cards_layout.setSpacing(10)
         cards_layout.setContentsMargins(0, 0, 0, 0)
 
-        # Place 4 cards in a 2x2 responsive grid
-        prog_keys = list(PROGRAM_REGISTRY.keys())
+        # Place 4 cards in a 2x2 responsive grid (launcher itself is the host hub)
+        prog_keys = [k for k in PROGRAM_REGISTRY.keys() if k != "launcher"]
         for idx, key in enumerate(prog_keys):
             prog = PROGRAM_REGISTRY[key]
             card = ProgramCard(prog, self)
@@ -792,12 +792,12 @@ class BeatbarLauncherWindow(QMainWindow):
 
     def _update_summary(self):
         total = len(self.card_widgets)
-        compilable = sum(1 for c in PROGRAM_REGISTRY.values() if c.can_compile)
+        compilable = sum(1 for k, c in PROGRAM_REGISTRY.items() if c.can_compile and k != "launcher")
         compiled_count = 0
         up_to_date_count = 0
 
         for key, prog in PROGRAM_REGISTRY.items():
-            if not prog.can_compile:
+            if key == "launcher" or not prog.can_compile:
                 continue
             comp = compare_program_version(prog)
             if comp.has_compiled:

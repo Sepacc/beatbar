@@ -48,6 +48,7 @@ videos/*
 packme/
 
 # Build artifacts & PyInstaller compiled binaries
+release/
 build/
 dist/
 downloads/

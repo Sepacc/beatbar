@@ -39,6 +39,22 @@ class ProgramConfig:
 
 
 PROGRAM_REGISTRY: Dict[str, ProgramConfig] = {
+    "launcher": ProgramConfig(
+        id="launcher",
+        name="BeatBar Suite Launcher",
+        subtitle="Central Studio Hub & Compiler",
+        description="Desktop command center for launching and compiling BeatBar Suite applications.",
+        icon_name="grid",
+        icon_svg="beatbar-main",
+        source_version_path=os.path.join(ROOT_DIR, "launcher", ".version"),
+        entry_script=os.path.join(ROOT_DIR, "launcher", "launcher.py"),
+        target_exe_name="BeatbarLauncher.exe",
+        can_compile=True,
+        working_dir=ROOT_DIR,
+        theme_color="#58a6ff",
+        accent_color="#1f6feb",
+        exe_pattern=r"^BeatbarLauncher.*\.exe$",
+    ),
     "beatbar_maker": ProgramConfig(
         id="beatbar_maker",
         name="BeatBar Maker",
@@ -212,20 +228,28 @@ def find_compiled_files(prog: ProgramConfig) -> List[str]:
 
 
 def find_primary_compiled_exe(prog: ProgramConfig) -> Optional[str]:
-    """Finds the primary compiled executable for a program."""
-    if not prog.can_compile or not os.path.exists(COMPILED_DIR):
+    """Finds the primary compiled executable for a program across candidate locations."""
+    if not prog.can_compile:
         return None
+
+    candidate_dirs = [
+        COMPILED_DIR,
+        ROOT_DIR,
+        os.path.dirname(sys.executable)
+    ]
 
     # Check exact expected name first
     if prog.target_exe_name:
-        exact_path = os.path.join(COMPILED_DIR, prog.target_exe_name)
-        if os.path.isfile(exact_path):
-            return exact_path
+        for cdir in candidate_dirs:
+            if not os.path.exists(cdir):
+                continue
+            exact_path = os.path.join(cdir, prog.target_exe_name)
+            if os.path.isfile(exact_path):
+                return exact_path
 
-    # Check pattern matches
+    # Check pattern matches in COMPILED_DIR
     files = find_compiled_files(prog)
     if files:
-        # Return most recently modified if multiple
         files.sort(key=lambda p: os.path.getmtime(p), reverse=True)
         return files[0]
 

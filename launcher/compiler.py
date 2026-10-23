@@ -110,6 +110,18 @@ def build_pyinstaller_command(prog: ProgramConfig) -> Tuple[List[str], Optional[
         f"--specpath={TEMP_BUILD_DIR}",
     ]
 
+    # Resolve Windows application icon from assets/icons/
+    icon_svg = getattr(prog, "icon_svg", "") or prog.id
+    candidate_icons = [
+        os.path.join(ROOT_DIR, "assets", "icons", f"{icon_svg}.ico"),
+        os.path.join(ROOT_DIR, "assets", "icons", f"beatbar-{icon_svg}.ico"),
+        os.path.join(ROOT_DIR, "assets", f"{icon_svg}.ico"),
+    ]
+    for ico in candidate_icons:
+        if os.path.exists(ico):
+            cmd.append(f"--icon={ico}")
+            break
+
     if os.path.exists(version_info_path):
         cmd.append(f"--version-file={version_info_path}")
 
@@ -240,6 +252,37 @@ def build_pyinstaller_command(prog: ProgramConfig) -> Tuple[List[str], Optional[
             "--exclude-module=PyQt6.QtMultimedia",
             "--exclude-module=PyQt6.QtMultimediaWidgets",
         ])
+    elif prog.id == "launcher":
+        launcher_dir = os.path.join(ROOT_DIR, "launcher")
+        cmd.extend([
+            f"--paths={ROOT_DIR}",
+            f"--paths={launcher_dir}",
+            f"--paths={main_dir}",
+            f"--add-data={launcher_dir};launcher",
+            f"--add-data={main_dir};main",
+            "--hidden-import=launcher",
+            "--hidden-import=launcher.launcher",
+            "--hidden-import=launcher.version_manager",
+            "--hidden-import=launcher.process_manager",
+            "--hidden-import=launcher.compiler",
+            "--hidden-import=launcher.compiler_dialog",
+            "--hidden-import=launcher.beat_dropzone",
+            "--hidden-import=launcher.skin_gallery",
+            "--hidden-import=icon_utils",
+            "--hidden-import=PyQt6",
+            "--hidden-import=PyQt6.QtCore",
+            "--hidden-import=PyQt6.QtGui",
+            "--hidden-import=PyQt6.QtWidgets",
+            "--hidden-import=PyQt6.QtSvg",
+            "--exclude-module=scipy",
+            "--exclude-module=librosa",
+            "--exclude-module=numba",
+            "--exclude-module=llvmlite",
+            "--exclude-module=cv2",
+            "--exclude-module=torch",
+            "--exclude-module=PyQt6.QtMultimedia",
+            "--exclude-module=PyQt6.QtMultimediaWidgets",
+        ])
 
     cmd.append(prog.entry_script)
     return cmd, version_str
@@ -367,3 +410,45 @@ class CompilationWorker(QThread):
 
         self.status_signal.emit("All tasks completed", 100)
         self.all_finished.emit()
+
+
+def compile_headless(program_ids: List[str]):
+    from launcher.version_manager import PROGRAM_REGISTRY
+    for prog_id in program_ids:
+        if prog_id not in PROGRAM_REGISTRY:
+            print(f"Unknown program: {prog_id}")
+            continue
+        prog = PROGRAM_REGISTRY[prog_id]
+        if not prog.can_compile:
+            print(f"Cannot compile {prog.name}")
+            continue
+        print("=" * 60)
+        print(f"Compiling {prog.name} ({prog.id})...")
+        clean_old_compiled_versions(prog)
+        cmd, source_version = build_pyinstaller_command(prog)
+        print(f"Version: v{source_version}")
+        print(f"Running PyInstaller...")
+        res = subprocess.run(cmd, cwd=ROOT_DIR)
+        if res.returncode == 0:
+            comp_ver_path = os.path.join(COMPILED_DIR, f"{os.path.splitext(prog.target_exe_name)[0]}.version")
+            with open(comp_ver_path, "w", encoding="utf-8") as vf:
+                vf.write(source_version)
+            print(f"[SUCCESS] Compiled {prog.name} (v{source_version}) successfully!\n")
+        else:
+            print(f"[ERROR] Failed to compile {prog.name} with code {res.returncode}\n")
+        if os.path.exists(TEMP_BUILD_DIR):
+            shutil.rmtree(TEMP_BUILD_DIR, ignore_errors=True)
+
+
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description="Headless PyInstaller compiler for Beatbar Suite")
+    parser.add_argument("programs", nargs="*", help="Program IDs to compile (beatbar_maker, beatbar_viewer, beatbar_skins, launcher). Use 'all' for all.")
+    args = parser.parse_args()
+
+    if not args.programs or "all" in args.programs:
+        targets = ["launcher", "beatbar_maker", "beatbar_viewer", "beatbar_skins"]
+    else:
+        targets = args.programs
+    compile_headless(targets)
+
