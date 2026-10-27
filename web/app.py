@@ -148,7 +148,7 @@ def api_config():
     port = request.host.split(":")[-1] if ":" in request.host else "8080"
     mobile_urls = [f"http://{ip}:{port}" for ip in lan_ips]
     ver_path = os.path.join(ROOT_DIR, "web", ".version")
-    ver_str = "1.2.0"
+    ver_str = "1.2.1"
     if os.path.exists(ver_path):
         try:
             with open(ver_path, "r", encoding="utf-8") as vf:

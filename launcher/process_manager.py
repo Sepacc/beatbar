@@ -8,12 +8,33 @@ tracking active instances, and managing the Web Viewer server.
 import os
 import sys
 import time
+import socket
 import webbrowser
 import subprocess
 from typing import Dict, Optional, Tuple
 from launcher.version_manager import (
     ProgramConfig, PROGRAM_REGISTRY, ROOT_DIR, find_primary_compiled_exe
 )
+
+
+def is_port_in_use(port: int, host: str = "127.0.0.1") -> bool:
+    """Checks if a local port is already bound / occupied by an external process."""
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.settimeout(0.5)
+            return s.connect_ex((host, port)) == 0
+    except Exception:
+        return False
+
+
+def find_available_port(start_port: int = 8080, max_attempts: int = 50, host: str = "127.0.0.1") -> int:
+    """Finds the first available port starting from start_port."""
+    port = start_port
+    for _ in range(max_attempts):
+        if not is_port_in_use(port, host):
+            return port
+        port += 1
+    return start_port
 
 
 def get_silent_python_exe() -> str:
@@ -112,11 +133,17 @@ class ProcessManager:
         if not prog:
             return False, "Web viewer configuration missing"
 
-        # Check if already running
+        # Check if already running from this session
         if self.is_running("beatbar_web"):
             if auto_open_browser:
                 webbrowser.open(f"http://localhost:{self.web_port}")
             return True, f"Web viewer is already running on port {self.web_port}"
+
+        # Port binding pre-check: ensure port is not occupied by an external process
+        if is_port_in_use(self.web_port):
+            print(f"[ProcessManager] Port {self.web_port} is already held by an external process. Searching for available port...")
+            self.web_port = find_available_port(self.web_port + 1)
+            print(f"[ProcessManager] Selected available port {self.web_port}")
 
         script_path = prog.entry_script
         if not os.path.exists(script_path):

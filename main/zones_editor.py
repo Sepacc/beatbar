@@ -1963,9 +1963,10 @@ class VideoZonesEditorDialog(QDialog):
         parser_layout.setSpacing(6)
 
         p_row1 = QHBoxLayout()
-        self.btn_run_parser = QPushButton("Scan Video Beats...")
-        self.btn_run_parser.setIcon(get_feather_icon("video", "#ffd000", 14))
-        self.btn_run_parser.setToolTip("Opens computer vision beat parser to extract notes directly from video.")
+        self.btn_run_parser = QPushButton("Scan Video Beats... (WIP)")
+        self.btn_run_parser.setIcon(get_feather_icon("video", "#777788", 14))
+        self.btn_run_parser.setToolTip("Scan Video Beats [WIP - Currently Disabled]: Video beat parsing engine is under maintenance / work-in-progress.")
+        self.btn_run_parser.setEnabled(False)
         self.btn_run_parser.clicked.connect(self.action_run_video_parser)
         p_row1.addWidget(self.btn_run_parser)
 
@@ -2641,39 +2642,13 @@ class VideoZonesEditorDialog(QDialog):
     # Video Beat Parser Actions
     # -------------------------------------------------------------------------
     def action_run_video_parser(self):
-        """Launches the Video Beat Parser dialog to scan beats visually from video."""
-        if not self.media_path or not os.path.exists(self.media_path):
-            QMessageBox.warning(self, "Video Required", "No valid video file is loaded to scan.")
-            return
-
-        try:
-            try:
-                from main import VideoBeatParserDialog
-            except ImportError:
-                from main.main import VideoBeatParserDialog
-            dlg = VideoBeatParserDialog(self.media_path, parent=self)
-            if dlg.exec() == QDialog.DialogCode.Accepted:
-                if dlg.extracted_beats:
-                    p_times = [float(b['time']) for b in dlg.extracted_beats]
-                    self.video_parser_beats = sorted(p_times)
-                    self.timeline_widget.set_beats(
-                        tr1_beats=self.resulting_beats,
-                        tr2_beats=self.tr2_beats,
-                        tr3_beats=self.tr3_beats,
-                        video_parser_beats=self.video_parser_beats
-                    )
-                    self.update_inspector_stats()
-                    QMessageBox.information(
-                        self, "Video Beats Extracted",
-                        f"Extracted {len(p_times)} beats from video!\n\n"
-                        f"They are displayed as bright gold squares on Line 4 (VID PARSER).\n"
-                        f"You can now compare them visually against Track 1, 2, and 3,\n"
-                        f"or check 'Use Parser Beats as Project Beats' to use them directly."
-                    )
-                else:
-                    QMessageBox.information(self, "No Beats", "No beats were extracted with the selected ROI.")
-        except Exception as e:
-            QMessageBox.critical(self, "Error Running Video Parser", str(e))
+        """Launches the Video Beat Parser dialog to scan beats visually from video (Currently WIP)."""
+        QMessageBox.information(
+            self,
+            "Video Parser (WIP)",
+            "The Video Beat Parser engine is currently under maintenance / work-in-progress and has been temporarily disabled."
+        )
+        return
 
     def action_load_parser_beats(self):
         """Loads video parser beats from a previously saved JSON file."""

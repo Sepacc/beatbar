@@ -48,7 +48,10 @@ videos/*
 packme/
 
 # Build artifacts & PyInstaller compiled binaries
-release/
+release/*
+!release/*.md
+!release/*.py
+release/v1.2.0_old_backup/
 build/
 dist/
 downloads/
@@ -67,5 +70,6 @@ share/python-wheels/
 MANIFEST
 *.spec
 launcher/compiled/
+launcher/compiled*/
 launcher/build_temp/
 _review_deletion/

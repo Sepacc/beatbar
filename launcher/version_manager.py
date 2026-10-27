@@ -418,3 +418,63 @@ def clean_old_compiled_versions(prog: ProgramConfig) -> List[str]:
                 print(f"[VersionManager] Could not remove old file {fname}: {e}")
 
     return removed
+
+
+def check_program_dirty(prog: ProgramConfig) -> Tuple[bool, str]:
+    """
+    Checks whether a program is dirty and requires recompilation:
+    1. Returns (False, "Web native service") if prog is not compilable.
+    2. Returns (True, "No compiled binary found") if no binary exists in compiled/.
+    3. Returns (True, f"Version mismatch: source v{s} vs binary v{c}") if versions mismatch.
+    4. Compares source code modification times with primary executable timestamp.
+       If any source file in the program package was modified after the binary, returns (True, "Source files modified after build").
+    5. Returns (False, "Binary is up-to-date") otherwise.
+    """
+    if prog.is_web or not prog.can_compile:
+        return False, "Web service (native execution)"
+
+    comp = compare_program_version(prog)
+    if not comp.has_compiled or not comp.primary_exe_path:
+        return True, "No compiled binary found"
+
+    if comp.status_code == "OUTDATED":
+        return True, f"Version mismatch: source v{comp.source_version} vs binary v{comp.compiled_version}"
+
+    exe_mtime = os.path.getmtime(comp.primary_exe_path)
+
+    # Determine directories to check for source modification
+    source_dirs = []
+    if prog.id == "launcher":
+        source_dirs = [os.path.join(ROOT_DIR, "launcher")]
+    elif prog.id == "beatbar_maker":
+        source_dirs = [os.path.join(ROOT_DIR, "main")]
+    elif prog.id == "beatbar_viewer":
+        source_dirs = [os.path.join(ROOT_DIR, "viewer"), os.path.join(ROOT_DIR, "web")]
+    elif prog.id == "beatbar_skins":
+        source_dirs = [os.path.join(ROOT_DIR, "beatpanel"), os.path.join(ROOT_DIR, "viewer")]
+
+    max_source_mtime = 0.0
+    latest_file = ""
+
+    for s_dir in source_dirs:
+        if not os.path.isdir(s_dir):
+            continue
+        for root, dirs, files in os.walk(s_dir):
+            if any(skip in root for skip in ["__pycache__", "compiled", "build", "dist", ".git"]):
+                continue
+            for f in files:
+                ext = os.path.splitext(f)[1].lower()
+                if ext in [".py", ".json", ".svg", ".version", ".html", ".js", ".css"]:
+                    fpath = os.path.join(root, f)
+                    try:
+                        fmtime = os.path.getmtime(fpath)
+                        if fmtime > max_source_mtime:
+                            max_source_mtime = fmtime
+                            latest_file = f
+                    except OSError:
+                        pass
+
+    if max_source_mtime > exe_mtime:
+        return True, f"Source modified after build ({latest_file})"
+
+    return False, "Up to date"

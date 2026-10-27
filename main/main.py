@@ -3758,9 +3758,9 @@ class BeatbarApp(QMainWindow):
                 color: #666677;
             }
         """)
-        self.btn_video_parser.setToolTip("Video Parser: Directly extracts ground-truth beats from target video by detecting color transitions.")
+        self.btn_video_parser.setToolTip("Video Beat Parser [WIP]: Directly extracts ground-truth beats from target video by detecting color transitions. (Currently disabled / Work in progress)")
         self.btn_video_parser.clicked.connect(self.open_video_parser_dialog)
-        self.btn_video_parser.setEnabled(True)
+        self.btn_video_parser.setEnabled(False)
         top_toolbar_layout.addWidget(self.btn_video_parser)
         
         # Video & Rhythm Zones Window Button - Renamed to ZoneMaker
@@ -4528,7 +4528,7 @@ class BeatbarApp(QMainWindow):
         self.btn_auto_gen_v2.setEnabled(True)
         self.btn_auto_gen_v3.setEnabled(True)
         self.btn_auto_gen.setEnabled(True)
-        self.btn_video_parser.setEnabled(True)
+        self.btn_video_parser.setEnabled(False)  # Disabled: Video Parser is WIP
         self.btn_video_zones.setEnabled(True)
         self.btn_settings.setEnabled(True)
         self.btn_clear_beats.setEnabled(True)
@@ -5109,51 +5109,12 @@ class BeatbarApp(QMainWindow):
         self.open_generate_v3_dialog()
 
     def open_video_parser_dialog(self):
-        video_path = None
-        if hasattr(self, 'original_media_path') and self.original_media_path:
-            ext = os.path.splitext(self.original_media_path)[1].lower()
-            if ext in ['.mp4', '.mkv', '.avi', '.mov', '.flv', '.webm', '.m4v']:
-                video_path = self.original_media_path
-                
-        if not video_path:
-            video_path, _ = QFileDialog.getOpenFileName(
-                self, "Select Target Video for Beat Parsing", "",
-                "Video Files (*.mp4 *.mkv *.avi *.mov *.webm *.flv *.m4v);;All Files (*)"
-            )
-            if not video_path:
-                return
-
-        dlg = VideoBeatParserDialog(video_path, parent=self)
-        if dlg.exec() == QDialog.DialogCode.Accepted:
-            detected_beats = dlg.extracted_beats
-            target_lane = dlg.selected_target_lane
-            clear_lane = dlg.clear_target_lane
-            
-            if not detected_beats:
-                QMessageBox.warning(self, "No Beats Found", "No visual beats were detected with the current ROI and threshold.")
-                return
-                
-            self.last_video_parser_beats = [b['time'] for b in detected_beats]
-                
-            # If no audio project is loaded yet, automatically load the parsed video into the workspace
-            if not self.audio_path:
-                self.load_audio_file(file_path=video_path)
-                
-            if clear_lane:
-                self.timeline.beats = [b for b in self.timeline.beats if b.get('lane') != target_lane]
-                
-            self.timeline.beats.extend(detected_beats)
-            self.timeline.beats.sort(key=lambda b: (b['time'], b['lane']))
-            self.timeline.selected_beats = []
-            self.timeline.update()
-            self.mark_unsaved_changes()
-            
-            lane_names = ["Bass", "Low-Mid", "High-Mid", "Treble", "Beats"]
-            lane_name = lane_names[target_lane] if 0 <= target_lane < len(lane_names) else f"Lane {target_lane}"
-            QMessageBox.information(
-                self, "Video Parsing Complete",
-                f"Successfully extracted {len(detected_beats)} beats on {lane_name} directly from video!"
-            )
+        QMessageBox.information(
+            self,
+            "Video Parser (WIP)",
+            "The Video Beat Parser engine is currently under maintenance / work-in-progress and has been temporarily disabled."
+        )
+        return
 
     def open_video_zones_dialog(self):
         if not self.audio_path:

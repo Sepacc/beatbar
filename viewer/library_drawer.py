@@ -24,7 +24,7 @@ import sys
 import time
 from typing import List, Dict, Any, Optional
 
-from PyQt6.QtCore import Qt, QRectF, QTimer, pyqtSignal, QSize, QEvent, QUrl, QPoint
+from PyQt6.QtCore import Qt, QRectF, QTimer, pyqtSignal, QSize, QEvent, QUrl, QPoint, QThread
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QComboBox,
     QScrollArea, QFrame, QPushButton, QSizePolicy, QTabWidget, QListWidget,
@@ -539,6 +539,59 @@ class QueueRowWidget(QFrame):
         layout.addWidget(self.btn_play)
 
 
+class LibraryScanWorker(QThread):
+    """Background worker that scans media and thumbnails off the main GUI thread."""
+    item_scanned = pyqtSignal(dict, int, int)
+    scan_finished = pyqtSignal(list, int, int)
+
+    def __init__(self, videos_dir: str, parent=None):
+        super().__init__(parent)
+        self.videos_dir = videos_dir
+        self._is_cancelled = False
+
+    def cancel(self):
+        self._is_cancelled = True
+
+    def run(self):
+        if not os.path.exists(self.videos_dir):
+            self.scan_finished.emit([], 0, 0)
+            return
+
+        scanner = VideoScanner(self.videos_dir)
+        raw_items = scanner.scan()
+        total = len(raw_items)
+
+        items = []
+        with_beats = 0
+        missing_beats = 0
+
+        for idx, it in enumerate(raw_items, start=1):
+            if self._is_cancelled:
+                return
+
+            fpath = it.get("filepath")
+            if not fpath:
+                fpath = os.path.join(self.videos_dir, it["filename"])
+                it["filepath"] = fpath
+
+            # Background thumbnail creation with FFmpeg
+            if not it.get("thumbnail_path"):
+                it["thumbnail_path"] = scanner.ensure_thumbnail(fpath, it["filename"], it.get("duration", 0))
+
+            b_info = it.get("beat_info", {})
+            has_beats = b_info.get("has_beats", False) and b_info.get("beat_count", 0) > 0
+            if has_beats:
+                with_beats += 1
+            else:
+                missing_beats += 1
+
+            items.append(it)
+            self.item_scanned.emit(it, idx, total)
+
+        if not self._is_cancelled:
+            self.scan_finished.emit(items, with_beats, missing_beats)
+
+
 class LibraryDrawerWidget(QWidget):
     """
     Fullscreen Visual Media Library Tab & Up Next Queue Manager.
@@ -556,6 +609,12 @@ class LibraryDrawerWidget(QWidget):
         self.filtered_data = []
         self.queue = []
         self.current_tab = "all"  # "all", "beats", "missing", "queue"
+
+        self._scan_worker = None
+        self._progressive_filter_timer = QTimer(self)
+        self._progressive_filter_timer.setSingleShot(True)
+        self._progressive_filter_timer.setInterval(80)
+        self._progressive_filter_timer.timeout.connect(self._apply_filters)
 
         # Background preview player
         self.preview_player = QMediaPlayer(self)
@@ -1019,51 +1078,57 @@ class LibraryDrawerWidget(QWidget):
     # =========================================================================
 
     def scan_library(self):
-        """Scans videos folder using VideoScanner for robust parsing and thumbnailing."""
+        """Scans videos folder in background QThread, streaming parsed cards to UI progressively."""
         videos_dir = os.path.join(ROOT_DIR, "videos")
         if not os.path.exists(videos_dir):
             self.videos_data = []
             self._apply_filters()
             return
 
-        scanner = VideoScanner(videos_dir)
-        raw_items = scanner.scan()
+        if self._scan_worker is not None and self._scan_worker.isRunning():
+            self._scan_worker.cancel()
+            self._scan_worker.wait(300)
 
-        # Format items ensuring filepath and beat info are completely standard
-        items = []
-        with_beats = 0
-        missing_beats = 0
+        self.videos_data = []
+        self.btn_rescan.setEnabled(False)
+        self.lbl_status.setText("Scanning library...")
 
-        for it in raw_items:
-            # Ensure filepath exists
-            fpath = it.get("filepath")
-            if not fpath:
-                fpath = os.path.join(videos_dir, it["filename"])
-                it["filepath"] = fpath
+        self._scan_worker = LibraryScanWorker(videos_dir, self)
+        self._scan_worker.item_scanned.connect(self._on_item_scanned)
+        self._scan_worker.scan_finished.connect(self._on_scan_finished)
+        self._scan_worker.start()
 
-            # Ensure thumbnail_path exists
-            if not it.get("thumbnail_path"):
-                it["thumbnail_path"] = scanner.ensure_thumbnail(fpath, it["filename"], it.get("duration", 0))
+    def _on_item_scanned(self, item: dict, current: int, total: int):
+        self.videos_data.append(item)
+        self.lbl_status.setText(f"Scanning media ({current}/{total})...")
+        self.tab_btn_all.setText(f"All Tracks ({len(self.videos_data)})")
+        if not self._progressive_filter_timer.isActive():
+            self._progressive_filter_timer.start()
 
-            # Beat count check
-            b_info = it.get("beat_info", {})
-            has_beats = b_info.get("has_beats", False) and b_info.get("beat_count", 0) > 0
-            if has_beats:
-                with_beats += 1
-            else:
-                missing_beats += 1
-
-            items.append(it)
-
+    def _on_scan_finished(self, items: list, with_beats: int, missing_beats: int):
         self.videos_data = items
-
-        # Update pill labels with counts
+        self.btn_rescan.setEnabled(True)
         self.tab_btn_all.setText(f"All Tracks ({len(items)})")
         self.tab_btn_beats.setText(f"With Beats ({with_beats})")
         self.tab_btn_missing.setText(f"Missing Beats ({missing_beats})")
         self.tab_btn_queue.setText(f"Up Next Queue ({len(self.queue)})")
-
         self._apply_filters()
+        self._scan_worker = None
+
+    def hideEvent(self, event):
+        if self._scan_worker is not None and self._scan_worker.isRunning():
+            self._scan_worker.cancel()
+            self._scan_worker.wait(300)
+        super().hideEvent(event)
+
+    def wait_for_scan(self, timeout_ms: int = 10000):
+        """Helper to block until background scanning finishes (for test runners and sync callers)."""
+        if self._scan_worker is not None and self._scan_worker.isRunning():
+            self._scan_worker.wait(timeout_ms)
+            from PyQt6.QtWidgets import QApplication
+            app = QApplication.instance()
+            if app:
+                app.processEvents()
 
     def _apply_filters(self):
         """Applies category tabs, text search, difficulty, duration, rating, and sorting."""

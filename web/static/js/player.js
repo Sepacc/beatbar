@@ -84,6 +84,8 @@ class WebPlayer {
     // Double tap detector
     this._lastTapLeft = 0;
     this._lastTapRight = 0;
+    this._tapLeftTimer = null;
+    this._tapRightTimer = null;
 
     // Continuous clock interpolation for 60-120 FPS on Android
     this._clockTime = 0.0;
@@ -753,41 +755,53 @@ class WebPlayer {
     window.addEventListener('touchstart', poke, { passive: true });
 
     // Touch Layer Double Tap to Skip / Single Tap to Toggle UI
-    this.touchLeft.addEventListener('click', (e) => {
-      const now = performance.now();
-      if (now - this._lastTapLeft < 300) {
-        // Double tap left -> Skip -5s
-        this.skip(-5);
-        this._triggerRipple(this.rippleLeft);
-        this._lastTapLeft = 0;
-      } else {
-        this._lastTapLeft = now;
-        setTimeout(() => {
-          if (this._lastTapLeft !== 0) {
-            this._toggleControls();
-            this._lastTapLeft = 0;
-          }
-        }, 320);
+    // Uses dedicated touchstart handlers with e.preventDefault() to eliminate delayed click collisions
+    const handleGesture = (side, e) => {
+      if (e.type === 'touchstart') {
+        e.preventDefault();
       }
-    });
+      poke();
 
-    this.touchRight.addEventListener('click', (e) => {
+      const isLeft = (side === 'left');
       const now = performance.now();
-      if (now - this._lastTapRight < 300) {
-        // Double tap right -> Skip +5s
-        this.skip(5);
-        this._triggerRipple(this.rippleRight);
-        this._lastTapRight = 0;
+      const lastTap = isLeft ? this._lastTapLeft : this._lastTapRight;
+      const timerKey = isLeft ? '_tapLeftTimer' : '_tapRightTimer';
+      const ripple = isLeft ? this.rippleLeft : this.rippleRight;
+      const skipSeconds = isLeft ? -5 : 5;
+
+      if (now - lastTap < 300) {
+        // Double tap confirmed: clear pending single-tap toggle
+        if (this[timerKey]) {
+          clearTimeout(this[timerKey]);
+          this[timerKey] = null;
+        }
+        if (isLeft) this._lastTapLeft = 0;
+        else this._lastTapRight = 0;
+
+        this.skip(skipSeconds);
+        this._triggerRipple(ripple);
       } else {
-        this._lastTapRight = now;
-        setTimeout(() => {
-          if (this._lastTapRight !== 0) {
-            this._toggleControls();
-            this._lastTapRight = 0;
-          }
-        }, 320);
+        // First tap: record timestamp and debounce single tap toggle
+        if (isLeft) this._lastTapLeft = now;
+        else this._lastTapRight = now;
+
+        if (this[timerKey]) {
+          clearTimeout(this[timerKey]);
+        }
+        this[timerKey] = setTimeout(() => {
+          this._toggleControls();
+          if (isLeft) this._lastTapLeft = 0;
+          else this._lastTapRight = 0;
+          this[timerKey] = null;
+        }, 300);
       }
-    });
+    };
+
+    this.touchLeft.addEventListener('touchstart', (e) => handleGesture('left', e), { passive: false });
+    this.touchLeft.addEventListener('click', (e) => handleGesture('left', e));
+
+    this.touchRight.addEventListener('touchstart', (e) => handleGesture('right', e), { passive: false });
+    this.touchRight.addEventListener('click', (e) => handleGesture('right', e));
   }
 
   _triggerRipple(el) {

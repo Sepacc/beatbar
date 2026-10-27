@@ -88,9 +88,10 @@ VSVersionInfo(
         return False
 
 
-def build_pyinstaller_command(prog: ProgramConfig) -> Tuple[List[str], Optional[str]]:
+def build_pyinstaller_command(prog: ProgramConfig, dist_dir: Optional[str] = None) -> Tuple[List[str], Optional[str]]:
     """Constructs the PyInstaller CLI arguments for compiling the target program."""
-    os.makedirs(COMPILED_DIR, exist_ok=True)
+    target_dist = dist_dir or COMPILED_DIR
+    os.makedirs(target_dist, exist_ok=True)
     os.makedirs(TEMP_BUILD_DIR, exist_ok=True)
 
     version_str = read_source_version(prog)
@@ -105,7 +106,7 @@ def build_pyinstaller_command(prog: ProgramConfig) -> Tuple[List[str], Optional[
         "--onefile",
         "--windowed",
         f"--name={os.path.splitext(prog.target_exe_name or 'Program')[0]}",
-        f"--distpath={COMPILED_DIR}",
+        f"--distpath={target_dist}",
         f"--workpath={TEMP_BUILD_DIR}",
         f"--specpath={TEMP_BUILD_DIR}",
     ]
@@ -141,6 +142,7 @@ def build_pyinstaller_command(prog: ProgramConfig) -> Tuple[List[str], Optional[
         "matplotlib", "pandas",
         "IPython", "jupyter", "notebook",
         "tkinter", "tcl", "_tkinter",
+        "unittest", "doctest", "pdb",
         # Unused Qt6 modules
         "PyQt6.QtQml", "PyQt6.QtQuick", "PyQt6.QtQuick3D", "PyQt6.QtQuickWidgets",
         "PyQt6.QtPdf", "PyQt6.QtPdfWidgets",
@@ -159,17 +161,7 @@ def build_pyinstaller_command(prog: ProgramConfig) -> Tuple[List[str], Optional[
             f"--paths={ROOT_DIR}",
             f"--paths={main_dir}",
             f"--add-data={main_dir};main",
-            "--collect-all=unittest",
-            "--collect-submodules=unittest",
-            "--hidden-import=unittest",
-            "--hidden-import=unittest.case",
-            "--hidden-import=unittest.suite",
-            "--hidden-import=unittest.loader",
-            "--hidden-import=unittest.runner",
-            "--hidden-import=unittest.result",
-            "--hidden-import=unittest.signals",
-            "--hidden-import=unittest.async_case",
-            "--hidden-import=numpy.testing",
+            "--exclude-module=unittest",
             "--hidden-import=beat_generator",
             "--hidden-import=beat_format",
             "--hidden-import=zones_editor",
@@ -190,12 +182,15 @@ def build_pyinstaller_command(prog: ProgramConfig) -> Tuple[List[str], Optional[
         ])
     elif prog.id == "beatbar_viewer":
         viewer_dir = os.path.join(ROOT_DIR, "viewer")
+        web_dir = os.path.join(ROOT_DIR, "web")
         cmd.extend([
             f"--paths={ROOT_DIR}",
             f"--paths={viewer_dir}",
             f"--paths={main_dir}",
+            f"--paths={web_dir}",
             f"--add-data={viewer_dir};viewer",
             f"--add-data={main_dir};main",
+            f"--add-data={web_dir};web",
             "--hidden-import=viewer",
             "--hidden-import=viewer.viewer",
             "--hidden-import=viewer.beatbar",
@@ -205,6 +200,9 @@ def build_pyinstaller_command(prog: ProgramConfig) -> Tuple[List[str], Optional[
             "--hidden-import=viewer.ui_components",
             "--hidden-import=viewer.video_canvas",
             "--hidden-import=viewer.screen_shake",
+            "--hidden-import=viewer.library_drawer",
+            "--hidden-import=web",
+            "--hidden-import=web.video_scanner",
             "--hidden-import=beat_format",
             "--hidden-import=icon_utils",
             "--hidden-import=PyQt6",

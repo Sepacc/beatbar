@@ -23,7 +23,7 @@ from PyQt6.QtCore import Qt, QTimer, QSize, QPoint
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QGridLayout, QLabel, QPushButton, QFrame, QScrollArea,
-    QMessageBox, QSizePolicy, QTabWidget
+    QMessageBox, QSizePolicy, QTabWidget, QMenu
 )
 from PyQt6.QtGui import QFont, QIcon, QColor, QPalette, QCursor, QPixmap
 
@@ -35,7 +35,8 @@ DEFAULT_LAUNCHER_CONFIG = {
     "window_x": None,
     "window_y": None,
     "is_maximized": False,
-    "active_tab": 0
+    "active_tab": 0,
+    "recent_history": []
 }
 
 from launcher.version_manager import (
@@ -44,7 +45,9 @@ from launcher.version_manager import (
 )
 from launcher.process_manager import process_manager
 from launcher.compiler_dialog import CompilerDialog
-from launcher.beat_dropzone import BeatDropZoneWidget
+from launcher.suite_updater import SuiteUpdateDialog
+from launcher.recent_manager import get_recent_media_history, add_to_recent_history
+from launcher.beat_dropzone import BeatDropZoneWidget, BeatActionDialog
 from launcher.skin_gallery import SkinGalleryWidget
 
 try:
@@ -463,24 +466,45 @@ class ProgramCard(QFrame):
             self.btn_stop.setVisible(self._is_running)
 
     def _on_primary_action(self):
-        if self.prog.is_web:
-            if self._is_running:
-                process_manager.open_web_in_browser()
+        # Disable launch button immediately upon click to prevent double-click instance collisions (Bug 2.4)
+        self.btn_primary.setEnabled(False)
+        if hasattr(self, "btn_secondary"):
+            self.btn_secondary.setEnabled(False)
+        try:
+            if self.prog.is_web:
+                if self._is_running:
+                    process_manager.open_web_in_browser()
+                else:
+                    ok, msg = process_manager.launch_web_viewer(auto_open_browser=True)
+                    if not ok:
+                        QMessageBox.warning(self, "Error", msg)
             else:
-                ok, msg = process_manager.launch_web_viewer(auto_open_browser=True)
+                ok, msg = process_manager.launch_program(self.prog.id, force_python=False)
                 if not ok:
                     QMessageBox.warning(self, "Error", msg)
-        else:
-            ok, msg = process_manager.launch_program(self.prog.id, force_python=False)
-            if not ok:
-                QMessageBox.warning(self, "Error", msg)
-        self.refresh()
+        finally:
+            self.refresh()
+            # Re-enable after registration confirmation / debounce delay
+            QTimer.singleShot(1000, self._re_enable_launch_buttons)
 
     def _run_python_script(self):
-        ok, msg = process_manager.launch_program(self.prog.id, force_python=True)
-        if not ok:
-            QMessageBox.warning(self, "Error", msg)
-        self.refresh()
+        # Disable launch button immediately upon click to prevent double-click instance collisions (Bug 2.4)
+        self.btn_primary.setEnabled(False)
+        if hasattr(self, "btn_secondary"):
+            self.btn_secondary.setEnabled(False)
+        try:
+            ok, msg = process_manager.launch_program(self.prog.id, force_python=True)
+            if not ok:
+                QMessageBox.warning(self, "Error", msg)
+        finally:
+            self.refresh()
+            # Re-enable after registration confirmation / debounce delay
+            QTimer.singleShot(1000, self._re_enable_launch_buttons)
+
+    def _re_enable_launch_buttons(self):
+        self.btn_primary.setEnabled(True)
+        if hasattr(self, "btn_secondary"):
+            self.btn_secondary.setEnabled(True)
 
     def _stop_running_process(self):
         ok, msg = process_manager.stop_program(self.prog.id)
@@ -508,7 +532,7 @@ class BeatbarLauncherWindow(QMainWindow):
 
         self._geom_autosave_timer = QTimer(self)
         self._geom_autosave_timer.setSingleShot(True)
-        self._geom_autosave_timer.setInterval(600)
+        self._geom_autosave_timer.setInterval(500)
         self._geom_autosave_timer.timeout.connect(self._save_config)
 
         self._apply_global_styles()
@@ -615,7 +639,33 @@ class BeatbarLauncherWindow(QMainWindow):
         h_layout.addStretch()
 
         # Top Action Buttons with Feather Icons
-        # 1. Compile All Button
+        # 1. Automated One-Click Suite Updater
+        self.btn_update_suite = QPushButton("Update Suite")
+        self.btn_update_suite.setFixedHeight(28)
+        self.btn_update_suite.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.btn_update_suite.setToolTip("One-click Git sync & automatic dirty component recompilation")
+        upd_ico = get_feather_icon("git-pull-request", color="#ffffff", size=13)
+        if upd_ico and not upd_ico.isNull():
+            self.btn_update_suite.setIcon(upd_ico)
+            self.btn_update_suite.setIconSize(QSize(13, 13))
+        self.btn_update_suite.setStyleSheet("""
+            QPushButton {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #238636, stop:1 #2ea043);
+                color: #ffffff;
+                border: none;
+                border-radius: 4px;
+                padding: 0 12px;
+                font-size: 11.5px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #2ea043, stop:1 #3fb950);
+            }
+        """)
+        self.btn_update_suite.clicked.connect(self._open_suite_updater)
+        h_layout.addWidget(self.btn_update_suite)
+
+        # 2. Compile Programs Button
         self.btn_compile_all = QPushButton("Compile Programs...")
         self.btn_compile_all.setFixedHeight(28)
         self.btn_compile_all.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
@@ -640,7 +690,7 @@ class BeatbarLauncherWindow(QMainWindow):
         self.btn_compile_all.clicked.connect(lambda: self.open_compiler(None))
         h_layout.addWidget(self.btn_compile_all)
 
-        # 2. Open Compiled Folder
+        # 3. Open Compiled Folder
         self.btn_open_folder = QPushButton("Compiled Folder")
         self.btn_open_folder.setFixedHeight(28)
         self.btn_open_folder.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
@@ -662,7 +712,30 @@ class BeatbarLauncherWindow(QMainWindow):
         self.btn_open_folder.clicked.connect(self._open_compiled_dir)
         h_layout.addWidget(self.btn_open_folder)
 
-        # 3. Refresh Button
+        # 4. Quick-access Recent Projects & Media History Button
+        self.btn_recents = QPushButton("Recent Media")
+        self.btn_recents.setFixedHeight(28)
+        self.btn_recents.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.btn_recents.setToolTip("Quick-access list of recently edited .beat and .mp4 files")
+        clock_ico = get_feather_icon("clock", color="#c9d1d9", size=13)
+        if clock_ico and not clock_ico.isNull():
+            self.btn_recents.setIcon(clock_ico)
+            self.btn_recents.setIconSize(QSize(13, 13))
+        self.btn_recents.setStyleSheet("""
+            QPushButton {
+                background-color: #21262d;
+                color: #c9d1d9;
+                border: none;
+                border-radius: 4px;
+                padding: 0 10px;
+                font-size: 11px;
+            }
+            QPushButton:hover { background-color: #30363d; color: #ffffff; }
+        """)
+        self.btn_recents.clicked.connect(self._show_recent_menu)
+        h_layout.addWidget(self.btn_recents)
+
+        # 5. Refresh Button
         self.btn_refresh = QPushButton("Refresh")
         self.btn_refresh.setFixedHeight(28)
         self.btn_refresh.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
@@ -724,6 +797,7 @@ class BeatbarLauncherWindow(QMainWindow):
 
         # Drag and Drop Area for .beat files
         self.dropzone = BeatDropZoneWidget(tab_programs)
+        self.dropzone.file_dropped.connect(self._record_recent_file)
         tab_prog_layout.addWidget(self.dropzone)
 
         # Sub-header / Library overview label
@@ -828,6 +902,124 @@ class BeatbarLauncherWindow(QMainWindow):
             os.startfile(COMPILED_DIR)
         else:
             subprocess.Popen(["xdg-open", COMPILED_DIR])
+
+    def _open_suite_updater(self):
+        """Opens the Automated One-Click Suite Updater dialog."""
+        dialog = SuiteUpdateDialog(parent=self)
+        dialog.suite_updated.connect(self.refresh_all)
+        dialog.exec()
+        self.refresh_all()
+
+    def _show_recent_menu(self):
+        """Displays quick-access popup menu of recently edited .beat and .mp4 files."""
+        menu = QMenu(self)
+        menu.setStyleSheet("""
+            QMenu {
+                background-color: #161b22;
+                color: #c9d1d9;
+                border: 1px solid #30363d;
+                border-radius: 6px;
+                padding: 4px;
+            }
+            QMenu::item {
+                padding: 6px 20px 6px 10px;
+                border-radius: 4px;
+                font-size: 11.5px;
+            }
+            QMenu::item:selected {
+                background-color: #1f6feb;
+                color: #ffffff;
+            }
+            QMenu::item:disabled {
+                color: #8b949e;
+                font-weight: bold;
+                font-size: 10px;
+            }
+            QMenu::separator {
+                height: 1px;
+                background-color: #30363d;
+                margin: 4px 0px;
+            }
+        """)
+
+        hist = self.config.get("recent_history", []) if hasattr(self, "config") else []
+        recent_data = get_recent_media_history(config_history=hist, max_items=6)
+        beats = recent_data.get("beats", [])
+        videos = recent_data.get("videos", [])
+
+        # Section: Recent Beatmaps (.beat)
+        sec_beat = menu.addAction("RECENT BEATMAPS (.beat)")
+        sec_beat.setEnabled(False)
+
+        if beats:
+            for item in beats:
+                p = item["path"]
+                title = f"{item['name']}   ({item['time_str']} • {item['size_str']})"
+                act = menu.addAction(title)
+                ico = get_feather_icon("sliders", "#00f3ff", 14)
+                if ico and not ico.isNull():
+                    act.setIcon(ico)
+                act.triggered.connect(lambda checked=False, target=p: self._open_recent_beat(target))
+        else:
+            no_beat = menu.addAction("  (No recent .beat files found)")
+            no_beat.setEnabled(False)
+
+        menu.addSeparator()
+
+        # Section: Recent Videos (.mp4)
+        sec_vid = menu.addAction("RECENT VIDEOS (.mp4)")
+        sec_vid.setEnabled(False)
+
+        if videos:
+            for item in videos:
+                p = item["path"]
+                title = f"{item['name']}   ({item['time_str']} • {item['size_str']})"
+                act = menu.addAction(title)
+                ico = get_feather_icon("film", "#2ed573", 14)
+                if ico and not ico.isNull():
+                    act.setIcon(ico)
+                act.triggered.connect(lambda checked=False, target=p: self._open_recent_video(target))
+        else:
+            no_vid = menu.addAction("  (No recent .mp4 files found)")
+            no_vid.setEnabled(False)
+
+        menu.addSeparator()
+
+        act_clear = menu.addAction("Clear History")
+        act_clear.triggered.connect(self._clear_recent_history)
+
+        pos = self.btn_recents.mapToGlobal(QPoint(0, self.btn_recents.height() + 2))
+        menu.exec(pos)
+
+    def _open_recent_beat(self, beat_path: str):
+        if not os.path.isfile(beat_path):
+            QMessageBox.warning(self, "File Not Found", f"The file no longer exists at:\n{beat_path}")
+            return
+        self._record_recent_file(beat_path)
+        dlg = BeatActionDialog(beat_path, self)
+        dlg.exec()
+
+    def _open_recent_video(self, video_path: str):
+        if not os.path.isfile(video_path):
+            QMessageBox.warning(self, "File Not Found", f"The file no longer exists at:\n{video_path}")
+            return
+        self._record_recent_file(video_path)
+        ok, msg = process_manager.launch_program("beatbar_viewer", extra_args=[video_path])
+        if not ok:
+            QMessageBox.warning(self, "Launch Error", msg)
+        self.refresh_all()
+
+    def _record_recent_file(self, path: str):
+        if not hasattr(self, "config") or not path:
+            return
+        hist = self.config.get("recent_history", [])
+        self.config["recent_history"] = add_to_recent_history(hist, path)
+        self._save_config()
+
+    def _clear_recent_history(self):
+        if hasattr(self, "config"):
+            self.config["recent_history"] = []
+            self._save_config()
 
     def _apply_saved_settings(self):
         w = int(self.config.get("window_width", 960))

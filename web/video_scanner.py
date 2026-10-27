@@ -12,6 +12,8 @@ import json
 import hashlib
 import sys
 import subprocess
+import threading
+import uuid
 from typing import List, Dict, Any, Optional
 
 from web.beat_parser import find_matching_beat_file, parse_beat_file, VIDEO_EXTS
@@ -29,6 +31,17 @@ EXTRACTED_DIR = os.path.join(CACHE_DIR, "extracted_videos")
 METADATA_CACHE_FILE = os.path.join(CACHE_DIR, "video_metadata.json")
 
 os.makedirs(PREVIEWS_DIR, exist_ok=True)
+
+# Per-file locks to prevent simultaneous duplicate FFmpeg preview encoding
+_preview_locks: Dict[str, threading.Lock] = {}
+_preview_locks_mutex = threading.Lock()
+
+
+def _get_preview_lock(path: str) -> threading.Lock:
+    with _preview_locks_mutex:
+        if path not in _preview_locks:
+            _preview_locks[path] = threading.Lock()
+        return _preview_locks[path]
 
 
 def get_embedded_video_info(beat_path: str) -> Optional[Dict[str, Any]]:
@@ -464,75 +477,98 @@ class VideoScanner:
         """
         Generates a lightweight 5-second 480p preview clip for fast looping in Web Library.
         This completely eliminates HTTP socket starvation and browser decoder stalls.
+        Protected with per-file mutex lock and atomic temp file rename to prevent competing processes.
         """
         name_no_ext, _ = os.path.splitext(filename)
         clip_path = os.path.join(PREVIEWS_DIR, f"{name_no_ext}.mp4")
 
-        # 1. Reuse existing valid preview clip
+        # 1. Fast-path check: Reuse existing valid preview clip
         if os.path.isfile(clip_path) and os.path.getsize(clip_path) > 10240:
             return clip_path
 
-        # 2. Resolve source video path
-        actual_video_path = full_path
-        if full_path.lower().endswith(".beat"):
-            extracted = self.get_extracted_video_path(full_path)
-            if extracted and os.path.isfile(extracted):
-                actual_video_path = extracted
-            else:
-                return None
-
-        if not os.path.isfile(actual_video_path):
-            return None
-
-        # 3. Determine start timestamp (15% in or 10s)
-        start_sec = 10.0
-        if duration > 10.0:
-            start_sec = min(30.0, max(2.0, duration * 0.15))
-
-        try:
-            cmd = [
-                "ffmpeg", "-y",
-                "-ss", str(start_sec),
-                "-t", "5",
-                "-i", actual_video_path,
-                "-vf", "scale=480:-2",
-                "-c:v", "libx264",
-                "-preset", "ultrafast",
-                "-crf", "28",
-                "-an",
-                "-movflags", "+faststart",
-                clip_path
-            ]
-            creationflags = getattr(subprocess, 'CREATE_NO_WINDOW', 0x08000000) if sys.platform == 'win32' else 0
-            res = subprocess.run(cmd, capture_output=True, timeout=20, creationflags=creationflags)
-            if res.returncode == 0 and os.path.isfile(clip_path) and os.path.getsize(clip_path) > 10240:
-                return clip_path
-        except Exception:
-            pass
-
-        # Fallback start at 0s
-        try:
-            cmd = [
-                "ffmpeg", "-y",
-                "-ss", "0",
-                "-t", "5",
-                "-i", actual_video_path,
-                "-vf", "scale=480:-2",
-                "-c:v", "libx264",
-                "-preset", "ultrafast",
-                "-crf", "28",
-                "-an",
-                "-movflags", "+faststart",
-                clip_path
-            ]
-            creationflags = getattr(subprocess, 'CREATE_NO_WINDOW', 0x08000000) if sys.platform == 'win32' else 0
-            subprocess.run(cmd, capture_output=True, timeout=20, creationflags=creationflags)
+        lock = _get_preview_lock(clip_path)
+        with lock:
+            # Re-check once lock is acquired in case another thread just completed it
             if os.path.isfile(clip_path) and os.path.getsize(clip_path) > 10240:
                 return clip_path
-        except Exception:
-            pass
 
-        return None
+            # 2. Resolve source video path
+            actual_video_path = full_path
+            if full_path.lower().endswith(".beat"):
+                extracted = self.get_extracted_video_path(full_path)
+                if extracted and os.path.isfile(extracted):
+                    actual_video_path = extracted
+                else:
+                    return None
+
+            if not os.path.isfile(actual_video_path):
+                return None
+
+            # 3. Determine start timestamp (15% in or 10s)
+            start_sec = 10.0
+            if duration > 10.0:
+                start_sec = min(30.0, max(2.0, duration * 0.15))
+
+            temp_clip_path = os.path.join(PREVIEWS_DIR, f"{name_no_ext}.tmp_{uuid.uuid4().hex[:8]}.mp4")
+
+            try:
+                cmd = [
+                    "ffmpeg", "-y",
+                    "-ss", str(start_sec),
+                    "-t", "5",
+                    "-i", actual_video_path,
+                    "-vf", "scale=480:-2",
+                    "-c:v", "libx264",
+                    "-preset", "ultrafast",
+                    "-crf", "28",
+                    "-an",
+                    "-movflags", "+faststart",
+                    temp_clip_path
+                ]
+                creationflags = getattr(subprocess, 'CREATE_NO_WINDOW', 0x08000000) if sys.platform == 'win32' else 0
+                res = subprocess.run(cmd, capture_output=True, timeout=20, creationflags=creationflags)
+                if res.returncode == 0 and os.path.isfile(temp_clip_path) and os.path.getsize(temp_clip_path) > 10240:
+                    os.replace(temp_clip_path, clip_path)
+                    return clip_path
+            except Exception:
+                pass
+            finally:
+                if os.path.isfile(temp_clip_path):
+                    try:
+                        os.remove(temp_clip_path)
+                    except Exception:
+                        pass
+
+            # Fallback start at 0s
+            try:
+                cmd = [
+                    "ffmpeg", "-y",
+                    "-ss", "0",
+                    "-t", "5",
+                    "-i", actual_video_path,
+                    "-vf", "scale=480:-2",
+                    "-c:v", "libx264",
+                    "-preset", "ultrafast",
+                    "-crf", "28",
+                    "-an",
+                    "-movflags", "+faststart",
+                    temp_clip_path
+                ]
+                creationflags = getattr(subprocess, 'CREATE_NO_WINDOW', 0x08000000) if sys.platform == 'win32' else 0
+                subprocess.run(cmd, capture_output=True, timeout=20, creationflags=creationflags)
+                if os.path.isfile(temp_clip_path) and os.path.getsize(temp_clip_path) > 10240:
+                    os.replace(temp_clip_path, clip_path)
+                    return clip_path
+            except Exception:
+                pass
+            finally:
+                if os.path.isfile(temp_clip_path):
+                    try:
+                        os.remove(temp_clip_path)
+                    except Exception:
+                        pass
+
+            return None
 
     def ensure_preview_clip_for_filename(self, filename: str) -> Optional[str]:
         """Finds source file by filename (or base name) and ensures preview clip exists."""

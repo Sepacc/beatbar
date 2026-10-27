@@ -235,15 +235,15 @@ class BeatActionDialog(QDialog):
 
     def _play_viewer(self):
         self.accept()
-        process_manager.launch_program("viewer", extra_args=[self.beat_path])
+        process_manager.launch_program("beatbar_viewer", extra_args=[self.beat_path])
 
     def _edit_maker(self):
         self.accept()
-        process_manager.launch_program("main", extra_args=[self.beat_path])
+        process_manager.launch_program("beatbar_maker", extra_args=[self.beat_path])
 
     def _customize_skin(self):
         self.accept()
-        process_manager.launch_program("skin_maker", extra_args=[self.beat_path])
+        process_manager.launch_program("beatbar_skins", extra_args=[self.beat_path])
 
     def _stream_web(self):
         self.accept()

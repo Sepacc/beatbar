@@ -116,7 +116,7 @@ class BeatbarSkin:
         self.name = name
         self.author = author
         self.description = "Custom skin designed with BeatPanel Skin Maker."
-        self.version = "1.2.0"
+        self.version = "1.2.1"
         self.palette = deepcopy(BUILTIN_PALETTES["violet"])
 
         # Layout transforms (offsets & scale for wings and center target, plus beat flipping)
@@ -400,6 +400,26 @@ class BeatbarSkin:
             f.write(format_svg(self.components["wing_left"]))
         with open(default_wing_r, "w", encoding="utf-8") as f:
             f.write(format_svg(self.components["wing_right"]))
+
+        # Ensure viewer/.config exists on fresh installs if neither .config nor viewer_config.json exists
+        if not (os.path.exists(viewer_dot_config) or os.path.exists(viewer_config_path)):
+            try:
+                from viewer.skin_manager import DEFAULT_CONFIG
+                initial_cfg = dict(DEFAULT_CONFIG)
+            except Exception:
+                initial_cfg = {
+                    "palette": "violet",
+                    "panel_skin": "cyber_wings",
+                    "beats_skin": "crest",
+                    "target_skin": "crest_gate",
+                    "hit_animation": "shockwave"
+                }
+            try:
+                os.makedirs(os.path.dirname(viewer_dot_config), exist_ok=True)
+                with open(viewer_dot_config, "w", encoding="utf-8") as f:
+                    json.dump(initial_cfg, f, indent=2)
+            except Exception as e:
+                print(f"Failed to create default {viewer_dot_config}:", e)
 
         # Update viewer configs (.config and legacy viewer_config.json)
         for cfg_file in [viewer_dot_config, viewer_config_path]:
